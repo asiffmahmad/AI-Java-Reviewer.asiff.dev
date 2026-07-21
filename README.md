@@ -1,6 +1,6 @@
 <h1 align="center">
   <br>
-  <img src="assets/logo.png" alt="AI Java Reviewer" width="200">
+  <img src="https://raw.githubusercontent.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/main/assets/logo.png" alt="AI Java Reviewer" width="200">
   <br>
   AI Java Reviewer
   <br>
@@ -9,10 +9,10 @@
 <h4 align="center">Enterprise-grade AI-powered Java & Spring Boot code review — deterministic static analysis paired with actionable AI explanations.</h4>
 
 <p align="center">
-  <a href="https://github.com/google/ai-java-reviewer/actions"><img src="https://img.shields.io/github/actions/workflow/status/google/ai-java-reviewer/ci.yml" alt="Build Status"></a>
+  <a href="https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/actions"><img src="https://img.shields.io/github/actions/workflow/status/asiffmahmad/AI-Java-Reviewer.asiff.dev/ci.yml" alt="Build Status"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=ai-java-reviewer.ai-java-reviewer"><img src="https://img.shields.io/visual-studio-marketplace/v/ai-java-reviewer.ai-java-reviewer" alt="Version"></a>
   <a href="https://marketplace.visualstudio.com/items?itemName=ai-java-reviewer.ai-java-reviewer"><img src="https://img.shields.io/visual-studio-marketplace/i/ai-java-reviewer.ai-java-reviewer" alt="Installs"></a>
-  <a href="https://github.com/google/ai-java-reviewer/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
+  <a href="https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
 <p align="center">
@@ -23,7 +23,7 @@
   <a href="#contributing">Contributing</a>
 </p>
 
-![Hero Banner](assets/hero-banner.png)
+![Hero Banner](https://raw.githubusercontent.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/main/assets/hero-banner.png)
 
 ## Features
 
@@ -42,7 +42,7 @@
 - **OpenRouter:** Access to hundreds of community models.
 
 ## Architecture
-![Architecture Diagram](assets/architecture-diagram.png)
+![Architecture Diagram](https://raw.githubusercontent.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/main/assets/architecture-diagram.png)
 
 Our extension uniquely combines a **Deterministic Static Analyzer** with an **LLM Orchestrator** to guarantee 0% hallucination on known enterprise rules, while preserving the LLM's ability to spot unknown business logic flaws.
 

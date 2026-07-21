@@ -7,11 +7,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/google/ai-java-reviewer.git"
+    "url": "https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev.git"
   },
   "bugs": {
-    "url": "https://github.com/google/ai-java-reviewer/issues"
+    "url": "https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/issues"
   },
+  "homepage": "https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev#readme",
   "engines": {
     "vscode": "^1.85.0"
   },
