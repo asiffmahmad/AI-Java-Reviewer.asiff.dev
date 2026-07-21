@@ -1,0 +1,292 @@
+# AI Java Reviewer — Project Configuration
+# Place this file in the root of your Java project.
+
+# --- Core Settings ---
+# Java version used in this project
+# javaVersion: "21"
+
+# Framework (spring-boot | jakarta-ee | quarkus | micronaut)
+# framework: "spring-boot"
+
+# --- AI Configuration (Optional Overrides) ---
+# aiProvider: "openai"
+# model: "gpt-4o"
+# systemPrompt: "You are a senior Java architect reviewing code for a financial institution."
+# taskPrompt: "Review the code and provide only a list of security vulnerabilities in JSON format."
+# outputDir: ".review-ai/reports"
+
+# --- Custom Organizational Rules ---
+# Add any custom English instruction or business logic restriction.
+# The AI is forced to enforce these exact rules during the review!
+
+rules:
+
+  dependency_injection:
+    - constructor injection only
+    - no field injection
+    - prefer final fields
+    - inject interfaces instead of implementations
+    - avoid static dependency injection
+    - avoid manual object creation of Spring beans
+
+  spring:
+    - use @Service for business layer
+    - use @Repository for persistence layer
+    - use @RestController for REST APIs
+    - repositories must not be accessed directly from controllers
+    - services should contain business logic
+    - controllers should only orchestrate requests
+    - avoid business logic in controllers
+    - avoid business logic in repositories
+    - use @ConfigurationProperties instead of @Value
+    - use Spring Profiles correctly
+
+  transactions:
+    - use @Transactional on service write methods
+    - use readOnly=true for read methods
+    - avoid @Transactional on controllers
+    - avoid long-running transactions
+    - avoid self invocation of transactional methods
+
+  logging:
+    - prefer SLF4J over System.out.println
+    - no System.out.println
+    - no printStackTrace
+    - use parameterized logging
+    - avoid string concatenation in log statements
+    - log exceptions with stack traces
+    - never log passwords
+    - never log tokens
+    - never log secrets
+
+  validation:
+    - validate all controller inputs with @Valid
+    - use Bean Validation annotations
+    - validate request parameters
+    - validate path variables
+    - avoid manual validation when Bean Validation exists
+
+  security:
+    - no hardcoded secrets
+    - no hardcoded credentials
+    - passwords must be encoded
+    - sanitize user input
+    - prevent SQL Injection
+    - prevent XSS
+    - prevent command injection
+    - use prepared statements
+    - never expose internal exceptions
+    - never expose stack traces
+    - secure REST endpoints
+    - validate JWT tokens
+    - use HTTPS
+    - secure cookies
+    - avoid sensitive response data
+
+  exception_handling:
+    - use @ControllerAdvice
+    - create custom exceptions
+    - avoid catching Exception
+    - catch specific exceptions
+    - never ignore exceptions
+    - wrap external exceptions
+    - return meaningful error responses
+
+  repository:
+    - paginate large result sets
+    - avoid findAll without Pageable
+    - avoid N+1 queries
+    - use projections when possible
+    - avoid unnecessary native queries
+    - use Optional for nullable queries
+    - avoid business logic in repositories
+
+  rest_api:
+    - use proper HTTP methods
+    - use ResponseEntity where appropriate
+    - return proper HTTP status codes
+    - avoid verbs in URI
+    - use plural resource names
+    - consistent endpoint naming
+    - use DTOs
+    - never expose entities directly
+
+  dto:
+    - request DTOs
+    - response DTOs
+    - never expose entities
+    - use MapStruct where applicable
+
+  jpa:
+    - prefer LAZY fetch
+    - avoid EAGER fetch
+    - avoid CascadeType.ALL
+    - use fetch joins
+    - implement equals/hashCode correctly
+    - avoid bidirectional relationships when unnecessary
+
+  performance:
+    - paginate database queries
+    - cache expensive operations
+    - avoid repeated DB calls in loops
+    - avoid nested loops
+    - avoid unnecessary streams
+    - avoid unnecessary object creation
+
+  java:
+    - use final where possible
+    - avoid magic numbers
+    - use constants
+    - avoid duplicate code
+    - use generics
+    - avoid raw types
+    - avoid wildcard imports
+    - keep methods small
+    - keep classes focused
+    - use switch expressions
+    - prefer immutable objects
+
+  naming:
+    - classes PascalCase
+    - methods camelCase
+    - variables camelCase
+    - constants UPPER_CASE
+    - interfaces should be nouns
+    - avoid abbreviations
+
+  collections:
+    - prefer List over ArrayList
+    - prefer Set for uniqueness
+    - return immutable collections
+    - return empty collections instead of null
+
+  null_handling:
+    - Optional only for return values
+    - avoid Optional fields
+    - avoid returning null collections
+    - prefer empty collections
+
+  configuration:
+    - avoid hardcoded URLs
+    - use application.yml
+    - externalize configuration
+    - use environment variables
+    - group configuration logically
+
+  testing:
+    - services require unit tests
+    - controllers require integration tests
+    - repositories require data tests
+    - mock external dependencies
+    - avoid Thread.sleep in tests
+
+  clean_code:
+    - single responsibility principle
+    - avoid methods longer than 50 lines
+    - avoid classes longer than 500 lines
+    - avoid deep nesting
+    - meaningful variable names
+    - remove dead code
+    - remove commented code
+    - avoid duplicate logic
+
+  documentation:
+    - JavaDoc for public APIs
+    - document complex logic
+    - document custom annotations
+
+  response:
+    - consistent API response
+    - include timestamp
+    - include status
+    - include message
+    - include error code
+
+  concurrency:
+    - avoid shared mutable state
+    - use thread-safe collections
+    - use CompletableFuture correctly
+    - avoid unnecessary synchronized blocks
+
+  code_smells:
+    - long methods
+    - large classes
+    - duplicate code
+    - god class
+    - feature envy
+    - primitive obsession
+    - data clumps
+    - shotgun surgery
+
+  microservices:
+    - configure timeouts
+    - configure retries
+    - configure circuit breakers
+    - externalize service URLs
+    - use resilience patterns
+
+  quality:
+    - no SonarQube blocker issues
+    - no SpotBugs high issues
+    - no PMD critical issues
+    - Checkstyle compliant
+    - no compiler warnings
+
+  java17:
+    - use records for immutable DTOs
+    - use switch expressions
+    - use text blocks
+    - use pattern matching
+    - use sealed classes where appropriate
+
+severity:
+  BLOCKER:
+    - hardcoded password
+    - hardcoded secret
+    - SQL Injection
+    - command injection
+    - exposed credentials
+
+  CRITICAL:
+    - controller accessing repository
+    - missing authorization
+    - missing transaction
+    - exposed stack trace
+
+  MAJOR:
+    - field injection
+    - System.out.println
+    - missing @Valid
+    - findAll without Pageable
+    - entity exposed through API
+    - missing global exception handler
+
+  MINOR:
+    - long methods
+    - duplicate code
+    - magic numbers
+    - deep nesting
+
+  INFO:
+    - missing JavaDoc
+    - naming improvements
+    - formatting suggestions
+
+review_categories:
+  - Security
+  - Spring Boot
+  - Architecture
+  - Dependency Injection
+  - Transactions
+  - Validation
+  - REST API
+  - JPA
+  - Performance
+  - Logging
+  - Exception Handling
+  - Testing
+  - Clean Code
+  - Documentation
+  - Code Smells
+  - Maintainability
+  - Readability

@@ -1,0 +1,14 @@
+.vscode/**
+.vscode-test/**
+src/**
+.gitignore
+webpack.config.js
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+!dist/**
+out/tests/**
+node_modules/**
+.mocharc.json
+.reviewai.yml

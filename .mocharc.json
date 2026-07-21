@@ -1,0 +1,7 @@
+{
+  "spec": ["out/tests/unit/**/*.test.js"],
+  "ui": "bdd",
+  "timeout": 10000,
+  "reporter": "spec",
+  "require": ["out/tests/unit/setup.js"]
+}

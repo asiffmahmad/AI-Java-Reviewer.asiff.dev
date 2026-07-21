@@ -1,0 +1,172 @@
+{
+  "name": "ai-java-reviewer",
+  "displayName": "AI Java Reviewer",
+  "description": "Enterprise-grade AI-powered Java & Spring Boot code review — deterministic static analysis with AI explanations.",
+  "version": "1.2.4",
+  "publisher": "asiff",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/google/ai-java-reviewer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/google/ai-java-reviewer/issues"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Other"
+  ],
+  "icon": "assets/logo.png",
+  "galleryBanner": {
+    "color": "#1E1E1E",
+    "theme": "dark"
+  },
+  "keywords": [
+    "java",
+    "spring",
+    "spring-boot",
+    "code-review",
+    "ai",
+    "static-analysis"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/pom.xml",
+    "workspaceContains:**/build.gradle",
+    "workspaceContains:**/build.gradle.kts",
+    "workspaceContains:**/*.java"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aijavareviewer.runReview",
+        "title": "Run AI Review",
+        "category": "AI Java Reviewer",
+        "icon": "$(search)"
+      },
+      {
+        "command": "aijavareviewer.configureProvider",
+        "title": "Configure AI Provider",
+        "category": "AI Java Reviewer",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "aijavareviewer.showReport",
+        "title": "Show Latest Report",
+        "category": "AI Java Reviewer",
+        "icon": "$(preview)"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "aijavareviewer.runReview",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "aijavareviewer.runReview"
+        },
+        {
+          "command": "aijavareviewer.configureProvider"
+        },
+        {
+          "command": "aijavareviewer.showReport"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "AI Java Reviewer",
+      "properties": {
+        "aijavareviewer.provider": {
+          "type": "string",
+          "enum": [
+            "openai",
+            "gemini",
+            "claude",
+            "ollama",
+            "openrouter",
+            "groq",
+            "github"
+          ],
+          "enumDescriptions": [
+            "OpenAI — GPT-4o, GPT-4-turbo",
+            "Google Gemini — Gemini 1.5 Pro",
+            "Anthropic Claude — Claude 3.5 Sonnet",
+            "Ollama — Local models, no API key required",
+            "OpenRouter — Multi-model routing",
+            "Groq — Ultra-fast LPU inference",
+            "GitHub Models (Copilot) — gpt-4o, etc."
+          ],
+          "default": "openai",
+          "markdownDescription": "AI provider used to explain and prioritize findings. API keys are stored in **VS Code SecretStorage**, never in settings files."
+        },
+        "aijavareviewer.model": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Exact model identifier for the selected provider (e.g. `gpt-4o`, `gemini-1.5-pro`, `claude-3-5-sonnet-20241022`)."
+        },
+        "aijavareviewer.outputDir": {
+          "type": "string",
+          "default": ".review-ai/reports",
+          "description": "Directory (relative to workspace root) where Markdown and JSON reports are saved."
+        },
+        "aijavareviewer.ollamaBaseUrl": {
+          "type": "string",
+          "default": "http://localhost:11434",
+          "description": "Base URL of your local Ollama server."
+        },
+        "aijavareviewer.openRouterBaseUrl": {
+          "type": "string",
+          "default": "https://openrouter.ai/api/v1",
+          "description": "OpenRouter API base URL."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts --max-warnings 0",
+    "pretest:unit": "npm run compile",
+    "test:unit": "mocha --config .mocharc.json",
+    "pretest:integration": "npm run compile",
+    "test:integration": "node ./out/tests/integration/runTest.js",
+    "test": "npm run test:unit",
+    "webpack": "webpack --mode production",
+    "webpack:dev": "webpack --mode development --watch",
+    "vscode:prepublish": "npm run webpack",
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@google/generative-ai": "^0.21.0",
+    "axios": "^1.7.7",
+    "java-parser": "^2.3.0",
+    "js-yaml": "^4.1.0",
+    "openai": "^4.68.0"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.0.0",
+    "@types/sinon": "^17.0.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vscode/test-electron": "^2.4.0",
+    "eslint": "^8.57.0",
+    "mocha": "^10.4.0",
+    "sinon": "^18.0.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.4.0",
+    "webpack": "^5.91.0",
+    "webpack-cli": "^5.1.4"
+  }
+}
