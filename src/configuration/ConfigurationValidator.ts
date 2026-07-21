@@ -40,6 +40,7 @@ export class ConfigurationValidator {
     this.validateRuleOverrides(obj);
     this.validateSeverity(obj);
     this.validateReviewCategories(obj);
+    this.validateMaxContextChars(obj);
   }
 
   // ── Field validators ────────────────────────────────────────────────────────
@@ -178,5 +179,11 @@ export class ConfigurationValidator {
         throw new Error(`review_categories[${index}] must be a string.`);
       }
     });
+  }
+
+  private validateMaxContextChars(obj: Record<string, unknown>): void {
+    if (obj['maxContextChars'] !== undefined && typeof obj['maxContextChars'] !== 'number') {
+      throw new Error('maxContextChars must be a number.');
+    }
   }
 }

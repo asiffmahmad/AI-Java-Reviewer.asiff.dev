@@ -11,6 +11,7 @@ import { RuleEngine } from '../rules/RuleEngine';
 import { ScoreCalculator } from '../scoring/ScoreCalculator';
 import { ReviewAgent } from '../ai/ReviewAgent';
 import { FileUtils } from '../utils/FileUtils';
+import { EXCLUDED_DIRECTORIES } from '../utils/constants';
 
 // Import our implemented rules
 import { FieldInjectionRule } from '../rules/FieldInjectionRule';
@@ -54,11 +55,19 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
       apiKey = key;
     }
 
-    // 3. Scan Workspace
-    // Note: We use relative path for workspace.findFiles
-    const javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), '**/node_modules/**');
-    const pomFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/pom.xml'), '**/node_modules/**');
-    const gradleFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.gradle'), '**/node_modules/**');
+    // 3. Scan Workspace or Target File
+    const excludePattern = `**/{${EXCLUDED_DIRECTORIES.join(',')},.gradle,bin,dist}/**`;
+    let javaFiles: vscode.Uri[] = [];
+
+    if (uri && uri.fsPath.endsWith('.java') && fs.existsSync(uri.fsPath) && fs.statSync(uri.fsPath).isFile()) {
+      this.logger.info(`Single file review requested: ${uri.fsPath}`);
+      javaFiles = [uri];
+    } else {
+      javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), excludePattern);
+    }
+
+    const pomFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/pom.xml'), excludePattern);
+    const gradleFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.gradle'), excludePattern);
 
     if (javaFiles.length === 0) {
       throw new Error('No Java files found in the workspace.');

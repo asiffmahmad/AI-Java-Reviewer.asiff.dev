@@ -65,15 +65,22 @@ export class PromptGenerator {
     }
     prompt += '\\n';
 
-    prompt += '## Source Files\\n';
-    classes.forEach(c => {
-      prompt += `### ${c.filePath}\\n`;
-      prompt += '```java\\n';
-      // If content is too long, we could truncate or just include structural info here.
-      // For this enterprise iteration, we'll assume the LLM context can handle it.
-      prompt += c.rawContent;
-      prompt += '\\n```\\n\\n';
-    });
+    prompt += '## Source Files\n';
+    const maxChars = config.maxContextChars ?? 32000;
+    let accumulatedChars = 0;
+
+    for (const c of classes) {
+      if (accumulatedChars + c.rawContent.length > maxChars) {
+        const remaining = maxChars - accumulatedChars;
+        if (remaining > 100) {
+          prompt += `### ${c.filePath}\n\`\`\`java\n${c.rawContent.slice(0, remaining)}\n// [Truncated due to context limit]\n\`\`\`\n\n`;
+        }
+        prompt += `*(Additional ${classes.length - classes.indexOf(c)} source files omitted to fit within maxContextChars limit of ${maxChars} characters)*\n\n`;
+        break;
+      }
+      prompt += `### ${c.filePath}\n\`\`\`java\n${c.rawContent}\n\`\`\`\n\n`;
+      accumulatedChars += c.rawContent.length;
+    }
 
     prompt += '## Task\\n';
     if (config.taskPrompt) {

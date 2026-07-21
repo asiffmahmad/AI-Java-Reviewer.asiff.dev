@@ -42,6 +42,17 @@ export const DEFAULT_MODELS: Record<AIProviderType, string> = {
   github: 'gpt-4o',
 };
 
+/** Default maxContextChars per provider when no explicit override is provided */
+export const DEFAULT_PROVIDER_MAX_CONTEXT_CHARS: Record<AIProviderType, number> = {
+  openai: 400000,
+  github: 400000,
+  gemini: 1000000,
+  claude: 500000,
+  groq: 32000,
+  ollama: 32000,
+  openrouter: 200000,
+};
+
 // ── Java project detection ────────────────────────────────────────────────────
 
 /** Files whose presence indicates a Maven or Gradle Java project. */

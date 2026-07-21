@@ -37,6 +37,8 @@ export interface IReviewConfig {
   readonly severity?: Record<string, string[]>;
   /** Custom review categories */
   readonly reviewCategories?: string[];
+  /** Maximum number of characters to include from source files before truncating */
+  readonly maxContextChars?: number;
 }
 
 /**
@@ -66,4 +68,5 @@ export const DEFAULT_REVIEW_CONFIG: IReviewConfig = {
   ollamaBaseUrl: DEFAULT_OLLAMA_BASE_URL,
   openRouterBaseUrl: DEFAULT_OPENROUTER_BASE_URL,
   ruleOverrides: [],
+  maxContextChars: 32000,
 };

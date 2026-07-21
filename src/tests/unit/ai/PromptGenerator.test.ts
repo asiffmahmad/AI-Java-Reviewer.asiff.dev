@@ -73,4 +73,49 @@ describe('PromptGenerator', () => {
     assert.ok(prompt.includes('No deterministic issues found.'));
     assert.ok(prompt.includes('No relevant dependencies found.'));
   });
+
+  it('respects maxContextChars configuration by truncating large input files', () => {
+    const classes: IJavaClass[] = [
+      {
+        className: 'ClassA',
+        filePath: '/ClassA.java',
+        rawContent: 'A'.repeat(500),
+        packageName: '',
+        fullyQualifiedName: 'ClassA',
+        classType: 'class',
+        stereotype: 'none',
+        annotations: [],
+        fields: [],
+        methods: [],
+        interfaces: [],
+        imports: [],
+        lineCount: 10
+      },
+      {
+        className: 'ClassB',
+        filePath: '/ClassB.java',
+        rawContent: 'B'.repeat(500),
+        packageName: '',
+        fullyQualifiedName: 'ClassB',
+        classType: 'class',
+        stereotype: 'none',
+        annotations: [],
+        fields: [],
+        methods: [],
+        interfaces: [],
+        imports: [],
+        lineCount: 10
+      }
+    ];
+
+    const mockConfig = {
+      systemPrompt: 'System Prompt',
+      taskPrompt: 'Task Prompt',
+      maxContextChars: 600
+    } as any;
+
+    const prompt = generator.generate(classes, [], [], mockScore, mockConfig);
+    assert.ok(prompt.includes('ClassA.java'));
+    assert.ok(prompt.includes('omitted to fit within maxContextChars limit'));
+  });
 });

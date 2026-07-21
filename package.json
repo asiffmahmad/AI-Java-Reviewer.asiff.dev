@@ -2,7 +2,7 @@
   "name": "ai-java-reviewer",
   "displayName": "AI Java Reviewer",
   "description": "Enterprise-grade AI-powered Java & Spring Boot code review — deterministic static analysis with AI explanations.",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "publisher": "asiff",
   "license": "MIT",
   "repository": {

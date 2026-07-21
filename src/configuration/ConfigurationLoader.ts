@@ -8,7 +8,7 @@ import { DEFAULT_REVIEW_CONFIG } from './ReviewConfig';
 import { ConfigurationValidator } from './ConfigurationValidator';
 import { FileUtils } from '../utils/FileUtils';
 import type { Logger } from '../utils/Logger';
-import { CONFIG_FILE_NAME, DEFAULT_MODELS } from '../utils/constants';
+import { CONFIG_FILE_NAME, DEFAULT_MODELS, DEFAULT_PROVIDER_MAX_CONTEXT_CHARS } from '../utils/constants';
 
 /**
  * Loads and merges review configuration from three sources (highest → lowest priority):
@@ -91,6 +91,11 @@ export class ConfigurationLoader {
       partial.openRouterBaseUrl = openRouterBaseUrl.trim();
     }
 
+    const maxContextChars = s.get<number>('maxContextChars');
+    if (maxContextChars && maxContextChars > 0) {
+      partial.maxContextChars = maxContextChars;
+    }
+
     return partial as Partial<IReviewConfig>;
   }
 
@@ -117,6 +122,8 @@ export class ConfigurationLoader {
       severity: DEFAULT_REVIEW_CONFIG.severity,
       reviewCategories: DEFAULT_REVIEW_CONFIG.reviewCategories,
     };
+
+    let explicitMaxCharsSet = false;
 
     for (const partial of partials) {
       if (partial.javaVersion !== undefined) {
@@ -163,6 +170,15 @@ export class ConfigurationLoader {
       if (partial.reviewCategories !== undefined && partial.reviewCategories.length > 0) {
         result.reviewCategories = [...partial.reviewCategories];
       }
+      if (partial.maxContextChars !== undefined) {
+        result.maxContextChars = partial.maxContextChars;
+        explicitMaxCharsSet = true;
+      }
+    }
+
+    if (!explicitMaxCharsSet) {
+      const activeProvider = result.provider as AIProviderType;
+      result.maxContextChars = DEFAULT_PROVIDER_MAX_CONTEXT_CHARS[activeProvider] ?? DEFAULT_REVIEW_CONFIG.maxContextChars;
     }
 
     return result as unknown as IReviewConfig;
@@ -229,6 +245,9 @@ export class ConfigurationLoader {
     }
     if (Array.isArray(raw['review_categories'])) {
       partial.reviewCategories = raw['review_categories'] as string[];
+    }
+    if (raw['maxContextChars'] !== undefined && typeof raw['maxContextChars'] === 'number') {
+      partial.maxContextChars = raw['maxContextChars'];
     }
 
     return partial as Partial<IReviewConfig>;
