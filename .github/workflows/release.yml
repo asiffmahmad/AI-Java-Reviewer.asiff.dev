@@ -26,7 +26,7 @@ jobs:
         VSCE_PAT: ${{ secrets.VSCE_PAT }}
         
     - name: Publish to Open VSX
-      uses: HaaLeo/publish-vscode-extension@v1
+      uses: HaaLeo/publish-vscode-extension@v2
       with:
         pat: ${{ secrets.OPEN_VSX_PAT }}
         extensionFile: '*.vsix'
