@@ -24,7 +24,7 @@ export class OpenRouterProvider extends BaseHttpProvider implements ILLMProvider
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${this.apiKey}`,
-      'HTTP-Referer': 'https://github.com/google/ai-java-reviewer', 
+      'HTTP-Referer': 'https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev', 
       'X-Title': 'AI Java Reviewer'
     };
 

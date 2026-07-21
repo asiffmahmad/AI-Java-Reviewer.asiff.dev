@@ -2,7 +2,7 @@
   "name": "ai-java-reviewer",
   "displayName": "AI Java Reviewer",
   "description": "Enterprise-grade AI-powered Java & Spring Boot code review — deterministic static analysis with AI explanations.",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "publisher": "asiff",
   "license": "MIT",
   "repository": {
@@ -12,7 +12,11 @@
   "bugs": {
     "url": "https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev/issues"
   },
-  "homepage": "https://github.com/asiffmahmad/AI-Java-Reviewer.asiff.dev#readme",
+  "homepage": "https://www.asiff.dev/",
+  "author": {
+    "name": "asiff",
+    "url": "https://www.asiff.dev/"
+  },
   "engines": {
     "vscode": "^1.85.0"
   },
