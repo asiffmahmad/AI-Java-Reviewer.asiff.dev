@@ -60,3 +60,15 @@ Ollama runs the models directly on your hardware. Your code never leaves your ma
   model: meta-llama/llama-3-70b-instruct
   openRouterBaseUrl: https://openrouter.ai/api/v1
   ```
+
+## VS Code & Antigravity Chat API (`vscode-lm`)
+Uses native Language Model APIs (`vscode.lm`) and active Copilot/Antigravity/Enterprise chat models without requiring an external API key. Ideal for enterprise environments where personal API keys are disabled.
+- **Multi-Vendor Auto-Discovery**: Automatically scans for models under `antigravity`, `google`, `copilot`, `gemini`, `openai`, `github`, and `vscode`.
+- **Manual Family Fallback**: Prompts for manual model family input if auto-discovery is restricted by host environment security policies.
+- **Supported Models**: `gemini-1.5-pro`, `gpt-4o`, `claude-3-5-sonnet`, `auto`, or any model provided by installed chat extensions.
+- **Configuration**:
+  ```yaml
+  provider: vscode-lm
+  model: auto
+  ```
+

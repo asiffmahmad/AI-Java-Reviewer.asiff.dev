@@ -7,6 +7,9 @@ const VALID_PROVIDERS: ReadonlyArray<AIProviderType> = [
   'claude',
   'ollama',
   'openrouter',
+  'groq',
+  'github',
+  'vscode-lm',
 ];
 
 /**

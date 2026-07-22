@@ -7,6 +7,7 @@ import { OpenRouterProvider } from './providers/OpenRouterProvider';
 import { OllamaProvider } from './providers/OllamaProvider';
 import { GroqProvider } from './providers/GroqProvider';
 import { GithubProvider } from './providers/GithubProvider';
+import { VSCodeLMProvider } from './providers/VSCodeLMProvider';
 
 export class LLMProviderFactory {
   /**
@@ -34,6 +35,8 @@ export class LLMProviderFactory {
         return new GroqProvider(apiKey, modelName);
       case 'github':
         return new GithubProvider(apiKey, modelName);
+      case 'vscode-lm':
+        return new VSCodeLMProvider(modelName);
       default:
         // By default or for tests return mock
         return new MockProvider();

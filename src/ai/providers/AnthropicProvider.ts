@@ -16,6 +16,7 @@ export class AnthropicProvider extends BaseHttpProvider implements ILLMProvider 
     const payload = {
       model: this.model,
       max_tokens: 4096,
+      temperature: 0.0,
       messages: [{ role: 'user', content: prompt }]
     };
 

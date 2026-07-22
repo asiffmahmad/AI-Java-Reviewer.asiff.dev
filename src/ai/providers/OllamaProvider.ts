@@ -17,7 +17,10 @@ export class OllamaProvider extends BaseHttpProvider implements ILLMProvider {
     const payload = {
       model: this.model,
       prompt: prompt,
-      stream: false
+      stream: false,
+      options: {
+        temperature: 0.0
+      }
     };
 
     const headers = {

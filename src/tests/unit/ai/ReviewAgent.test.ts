@@ -16,8 +16,9 @@ describe('ReviewAgent', () => {
       provider: 'mock' as any,
     };
 
-    const review = await agent.executeReview([], [], config, 'fake-key');
+    const { reportMarkdown, promptText } = await agent.executeReview([], [], config, 'fake-key');
 
-    assert.ok(review.includes('Mock Review'));
+    assert.ok(reportMarkdown.includes('Mock Review'));
+    assert.ok(promptText.length > 0);
   });
 });

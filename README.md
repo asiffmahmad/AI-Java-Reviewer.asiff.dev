@@ -28,12 +28,14 @@
 ## Features
 
 * **Deterministic Rule Engine:** Extremely fast local AST parsing detects architectural anti-patterns (Field Injection, Missing `@Transactional`, Raw console logging) in milliseconds.
-* **AI Explainability:** Leverages frontier AI models to explain *why* the deterministic engine flagged your code and writes the exact refactored patch for you.
+* **Executive Scorecard & Reporting:** Redesigned reports with Letter Grade badges (A+ to F), Executive Scorecard tables, and Category/Severity matrices.
+* **Fail-Safe Prompt Artifacts:** Automatically writes `prompt-<timestamp>.md` alongside reports for easy copy-pasting into Web AI interfaces (Antigravity Chat, Gemini, ChatGPT, Claude).
+* **Deterministic Output Guarantee:** Enforces `temperature: 0.0` across all providers for reproducible, consistent review outputs.
 * **Privacy First:** We use the native VS Code `SecretStorage` API. Your API keys are encrypted in your OS Keychain and never persisted to plain text files.
-* **Scorecards:** Automatically assigns a Grade (A-F) based on Architecture, Security, Maintainability, and Testing categories.
-* **Multi-Provider Support:** Plug in OpenAI, Google Gemini, Anthropic Claude, OpenRouter, or run 100% locally with Ollama.
+* **Multi-Provider & IDE Support:** Connect to VS Code Chat LM API (Antigravity, Copilot), OpenAI, Google Gemini, Anthropic Claude, OpenRouter, Groq, or run 100% locally with Ollama.
 
 ## Supported AI Providers
+- **VS Code & Antigravity Chat API (`vscode-lm`):** Native IDE models (Antigravity, Copilot Chat, Gemini), no external API key required. Supports manual model family fallback.
 - **OpenAI:** `gpt-4o`, `gpt-4-turbo`
 - **Google Gemini:** `gemini-1.5-pro`
 - **Anthropic Claude:** `claude-3-5-sonnet-20241022`

@@ -20,7 +20,7 @@ export class GithubProvider extends BaseHttpProvider {
       messages: [
         { role: 'user', content: prompt }
       ],
-      temperature: 0.2,
+      temperature: 0.0,
     });
 
     const response = await this.post('https://models.inference.ai.azure.com/chat/completions', {

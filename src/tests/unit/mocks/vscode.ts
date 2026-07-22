@@ -13,6 +13,7 @@ export const vscodeMock = {
     showInformationMessage: async () => {},
     showWarningMessage: async () => {},
     showErrorMessage: async () => {},
+    showTextDocument: async () => {},
     withProgress: async (_options: unknown, task: (p: unknown) => Promise<void>) => {
       await task({ report: () => {} });
     }
@@ -25,6 +26,8 @@ export const vscodeMock = {
     getConfiguration: () => ({
       get: () => undefined
     }),
+    findFiles: async () => [],
+    openTextDocument: async () => ({}),
     workspaceFolders: undefined
   },
   Uri: {
@@ -32,6 +35,21 @@ export const vscodeMock = {
   },
   ProgressLocation: {
     Notification: 15
+  },
+  lm: {
+    selectChatModels: async () => []
+  },
+  LanguageModelChatMessage: {
+    User: (content: string) => ({ role: 1, content }),
+    Assistant: (content: string) => ({ role: 2, content }),
+  },
+  RelativePattern: class {
+    constructor(public base: string, public pattern: string) {}
+  },
+  CancellationTokenSource: class {
+    token = {};
+    cancel() {}
+    dispose() {}
   }
 };
 

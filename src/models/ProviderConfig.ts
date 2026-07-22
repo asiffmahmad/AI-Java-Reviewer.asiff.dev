@@ -2,7 +2,7 @@
  * All valid AI provider identifiers.
  * Adding a new provider requires implementing AIProvider and adding it here.
  */
-export type AIProviderType = 'openai' | 'gemini' | 'claude' | 'ollama' | 'openrouter' | 'groq' | 'github';
+export type AIProviderType = 'openai' | 'gemini' | 'claude' | 'ollama' | 'openrouter' | 'groq' | 'github' | 'vscode-lm';
 
 /**
  * Runtime configuration resolved for an AI provider call.

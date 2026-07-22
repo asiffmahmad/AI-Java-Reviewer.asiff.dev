@@ -56,6 +56,9 @@ export class SecretManager {
       case 'ollama':
         // Ollama usually runs locally and doesn't require an API key by default
         return 'aijavareviewer.ollama.apiKey';
+      case 'vscode-lm':
+        // VS Code Chat Window API uses built-in VS Code authentication, no API key required
+        return 'aijavareviewer.vscodelm.apiKey';
       default:
         throw new Error(`Unknown provider: ${provider}`);
     }

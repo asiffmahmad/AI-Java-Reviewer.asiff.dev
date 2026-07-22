@@ -2,7 +2,7 @@
   "name": "ai-java-reviewer",
   "displayName": "AI Java Reviewer",
   "description": "Enterprise-grade AI-powered Java & Spring Boot code review — deterministic static analysis with AI explanations.",
-  "version": "1.2.6",
+  "version": "1.2.8",
   "publisher": "asiff",
   "license": "MIT",
   "repository": {
@@ -97,7 +97,8 @@
             "ollama",
             "openrouter",
             "groq",
-            "github"
+            "github",
+            "vscode-lm"
           ],
           "enumDescriptions": [
             "OpenAI — GPT-4o, GPT-4-turbo",
@@ -106,7 +107,8 @@
             "Ollama — Local models, no API key required",
             "OpenRouter — Multi-model routing",
             "Groq — Ultra-fast LPU inference",
-            "GitHub Models (Copilot) — gpt-4o, etc."
+            "GitHub Models (Copilot) — gpt-4o, etc.",
+            "VS Code Chat Window API (vscode-lm) — Built-in VS Code models, no external API key required"
           ],
           "default": "openai",
           "markdownDescription": "AI provider used to explain and prioritize findings. API keys are stored in **VS Code SecretStorage**, never in settings files."

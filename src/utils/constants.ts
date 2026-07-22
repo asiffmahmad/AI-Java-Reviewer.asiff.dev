@@ -40,6 +40,7 @@ export const DEFAULT_MODELS: Record<AIProviderType, string> = {
   openrouter: 'openai/gpt-4o',
   groq: 'llama-3.3-70b-versatile',
   github: 'gpt-4o',
+  'vscode-lm': 'auto',
 };
 
 /** Default maxContextChars per provider when no explicit override is provided */
@@ -51,6 +52,7 @@ export const DEFAULT_PROVIDER_MAX_CONTEXT_CHARS: Record<AIProviderType, number> 
   groq: 32000,
   ollama: 32000,
   openrouter: 200000,
+  'vscode-lm': 400000,
 };
 
 // ── Java project detection ────────────────────────────────────────────────────

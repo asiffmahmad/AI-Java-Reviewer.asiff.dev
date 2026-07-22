@@ -18,7 +18,8 @@ export class OpenRouterProvider extends BaseHttpProvider implements ILLMProvider
   public async generateReview(prompt: string): Promise<string> {
     const payload = {
       model: this.model,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.0,
     };
 
     const headers = {

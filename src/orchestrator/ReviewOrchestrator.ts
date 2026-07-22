@@ -47,12 +47,11 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
 
     // 2. Load API Key
     let apiKey = '';
-    if (config.provider !== 'ollama') { // ollama doesn't require an api key generally
+    if (config.provider !== 'ollama' && config.provider !== 'vscode-lm') {
       const key = await this.secretManager.getKey(config.provider);
-      if (!key) {
-        throw new Error(`API Key for ${config.provider} is not configured. Please run "AI Java Reviewer: Configure AI Provider".`);
+      if (key) {
+        apiKey = key;
       }
-      apiKey = key;
     }
 
     // 3. Scan Workspace or Target File
@@ -109,25 +108,35 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
 
     // 8. Execute AI Review
     this.logger.info('Executing AI review...');
-    const reviewMarkdown = await agent.executeReview(classes, dependencies, config, apiKey);
-
-    // 9. Save Output
-    // Save to current workspace root + configured outputDir
+    const timestamp = Date.now();
+    const promptFileName = `prompt-${timestamp}.md`;
     const outDir = path.join(workspaceRoot, config.outputDir || '.review-ai/reports');
     if (!fs.existsSync(outDir)) {
       fs.mkdirSync(outDir, { recursive: true });
     }
-    const timestamp = Date.now();
     const outFilePath = path.join(outDir, `review-${timestamp}.md`);
-    
-    await FileUtils.writeText(outFilePath, reviewMarkdown);
-    this.logger.info(`Review saved to ${outFilePath}`);
+    const promptFilePath = path.join(outDir, promptFileName);
 
-    // 10. Open in VS Code
+    const { reportMarkdown, promptText } = await agent.executeReview(classes, dependencies, config, apiKey, promptFileName);
+
+    // Format full prompt file artifact with usage instructions header
+    const fullPromptContent =
+      `# 📝 AI Java Reviewer — Copy-Paste Web Prompt Artifact\n\n` +
+      `> **Instructions**: Copy the entire text below and paste it into **Antigravity Chat**, **Google Gemini**, **ChatGPT**, or **Claude Web**.\n\n` +
+      `---\n\n` +
+      promptText;
+
+    // 9. Save Both Outputs
+    await FileUtils.writeText(promptFilePath, fullPromptContent);
+    await FileUtils.writeText(outFilePath, reportMarkdown);
+    this.logger.info(`Review report saved to ${outFilePath}`);
+    this.logger.info(`Full prompt artifact saved to ${promptFilePath}`);
+
+    // 10. Open Review Report in VS Code
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(outFilePath));
     await vscode.window.showTextDocument(doc);
     
-    // Explicitly notify the user with the absolute path
-    vscode.window.showInformationMessage(`AI Review complete! Saved to: ${outFilePath}`);
+    // Explicitly notify the user with the absolute paths
+    vscode.window.showInformationMessage(`AI Review complete! Saved report: ${outFilePath} | Saved prompt: ${promptFilePath}`);
   }
 }

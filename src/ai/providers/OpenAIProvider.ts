@@ -16,7 +16,7 @@ export class OpenAIProvider extends BaseHttpProvider implements ILLMProvider {
     const payload = {
       model: this.model,
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.2,
+      temperature: 0.0,
     };
 
     const headers = {

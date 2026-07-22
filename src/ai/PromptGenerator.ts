@@ -82,15 +82,16 @@ export class PromptGenerator {
       accumulatedChars += c.rawContent.length;
     }
 
-    prompt += '## Task\\n';
+    prompt += '## Task\n';
+    prompt += 'Be concise, objective, and deterministic. Avoid random variations in layout.\n\n';
     if (config.taskPrompt) {
       prompt += config.taskPrompt;
     } else {
-      prompt += 'Based on the provided source code, dependencies, and deterministic findings:\\n';
-      prompt += '1. Summarize the overall quality of the code.\\n';
-      prompt += '2. Elaborate on the deterministic findings if necessary.\\n';
-      prompt += '3. Point out any OTHER design flaws, logic bugs, or security vulnerabilities not caught by the deterministic rules.\\n';
-      prompt += '4. Provide actionable recommendations.\\n';
+      prompt += 'Based on the provided source code, dependencies, and deterministic findings:\n';
+      prompt += '1. Summarize the overall quality of the code.\n';
+      prompt += '2. Elaborate on the deterministic findings if necessary.\n';
+      prompt += '3. Point out any OTHER design flaws, logic bugs, or security vulnerabilities not caught by the deterministic rules.\n';
+      prompt += '4. Provide actionable recommendations.\n';
     }
 
     return prompt;

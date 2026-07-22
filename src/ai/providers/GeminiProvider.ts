@@ -18,7 +18,10 @@ export class GeminiProvider extends BaseHttpProvider implements ILLMProvider {
         parts: [{
           text: prompt
         }]
-      }]
+      }],
+      generationConfig: {
+        temperature: 0.0
+      }
     };
 
     const headers = {
