@@ -2,9 +2,15 @@ import type { IJavaClass } from '../models';
 import type { IReviewConfig } from '../configuration/ReviewConfig';
 import type { RuleEngine } from '../rules/RuleEngine';
 import type { ScoreCalculator } from '../scoring/ScoreCalculator';
+import type { ProjectIndex } from '../indexer/ProjectIndex';
 import { LLMProviderFactory } from './LLMProviderFactory';
-import { PromptGenerator } from './PromptGenerator';
+import { ContextBuilder } from '../context/ContextBuilder';
 import { ReportFormatter } from './ReportFormatter';
+import { ToolRegistry } from '../tools/ToolRegistry';
+import { AgenticReviewLoop } from './AgenticReviewLoop';
+import type { Logger } from '../utils/Logger';
+
+import { ReviewContextState } from '../context/ReviewContextState';
 
 export interface IReviewResult {
   readonly reportMarkdown: string;
@@ -14,37 +20,38 @@ export interface IReviewResult {
 export class ReviewAgent {
   private ruleEngine: RuleEngine;
   private scoreCalculator: ScoreCalculator;
-  private promptGenerator: PromptGenerator;
+  private contextBuilder: ContextBuilder;
   private reportFormatter: ReportFormatter;
+  private toolRegistry: ToolRegistry;
 
-  constructor(ruleEngine: RuleEngine, scoreCalculator: ScoreCalculator) {
+  constructor(
+    ruleEngine: RuleEngine,
+    scoreCalculator: ScoreCalculator,
+    private readonly logger?: Logger
+  ) {
     this.ruleEngine = ruleEngine;
     this.scoreCalculator = scoreCalculator;
-    this.promptGenerator = new PromptGenerator();
+    this.contextBuilder = new ContextBuilder();
     this.reportFormatter = new ReportFormatter();
+    this.toolRegistry = new ToolRegistry();
   }
 
   /**
    * Orchestrates the review process:
-   * 1. Evaluates rules locally.
+   * 1. Evaluates rules locally using deterministic engine.
    * 2. Calculates score.
-   * 3. Generates prompt.
-   * 4. Calls LLM.
+   * 3. Constructs minimal seed context prompt (~150-300 tokens) via ContextBuilder.
+   * 4. Invokes LLM agent via multi-turn tool loop (pulling source code, findings, scorecards via tools).
    * 5. Formats executive report with score table, issue breakdown, and AI deep-dive.
-   *
-   * @param classes The parsed Java classes.
-   * @param dependencies The parsed project dependencies.
-   * @param config The active project config.
-   * @param apiKey The API key for the configured AI provider.
-   * @param promptFileName Optional filename of the prompt markdown artifact.
-   * @returns A promise resolving to IReviewResult containing reportMarkdown and promptText.
    */
   public async executeReview(
     classes: IJavaClass[],
     dependencies: string[],
     config: IReviewConfig,
     apiKey: string,
-    promptFileName?: string
+    promptFileName?: string,
+    index?: ProjectIndex,
+    workspaceRoot?: string
   ): Promise<IReviewResult> {
     // 1. Evaluate deterministic rules
     const findings = this.ruleEngine.evaluate(classes, config);
@@ -52,10 +59,19 @@ export class ReviewAgent {
     // 2. Calculate scores
     const score = this.scoreCalculator.calculate(findings);
 
-    // 3. Generate context prompt
-    const prompt = this.promptGenerator.generate(classes, dependencies, findings, score, config);
+    // 3. Generate minimal seed context prompt (~150-300 tokens) with zero preloaded code
+    const seedPrompt = this.contextBuilder.buildSeedContext(classes, dependencies, findings, score, config, index, workspaceRoot);
 
-    // 4. Invoke LLM (with complete error safety for all failure modes)
+    // 4. Initialize stateful ReviewContextState
+    const contextState = new ReviewContextState({
+      findings,
+      score,
+      dependencies,
+      config,
+      workspaceRoot,
+    });
+
+    // 5. Invoke LLM with agent tool loop
     let baseUrl: string | undefined;
     if (config.provider === 'ollama') {
       baseUrl = config.ollamaBaseUrl;
@@ -66,7 +82,12 @@ export class ReviewAgent {
     let aiReview = '';
     try {
       const llmProvider = LLMProviderFactory.createProvider(config.provider, apiKey, config.model, baseUrl);
-      aiReview = await llmProvider.generateReview(prompt);
+      if (index) {
+        const loop = new AgenticReviewLoop(this.toolRegistry, 5, this.logger);
+        aiReview = await loop.runLoop(llmProvider, seedPrompt, index, contextState);
+      } else {
+        aiReview = await llmProvider.generateReview(seedPrompt);
+      }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
       const targetPromptFile = promptFileName || 'prompt-<timestamp>.md';
@@ -74,7 +95,7 @@ export class ReviewAgent {
       aiReview =
         `> ⚠️ **AI Review Provider Request Failed**: ${errorMsg}\n\n` +
         `### 💡 Recommended Next Steps for Failed Requests:\n` +
-        `1. **Use Prompt Backup Artifact**: The complete prompt artifact has been generated and saved in \`${targetPromptFile}\`. You can copy and paste its contents directly into any Web AI Chat (**Antigravity Chat**, **Google Gemini**, **ChatGPT**, or **Claude Web**).\n` +
+        `1. **Use Prompt Backup Artifact**: The prompt artifact has been generated and saved in \`${targetPromptFile}\`.\n` +
         `2. **Check Configuration**: Verify your API key or local endpoint URL via \`AI Java Reviewer: Configure AI Provider\`.\n` +
         `3. **Switch AI Provider**: You can select **Ollama** (100% local/free) or **vscode-lm** from the Command Palette.\n`;
     }
@@ -84,7 +105,7 @@ export class ReviewAgent {
 
     return {
       reportMarkdown,
-      promptText: prompt,
+      promptText: seedPrompt,
     };
   }
 }

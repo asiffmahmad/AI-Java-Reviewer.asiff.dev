@@ -3,7 +3,7 @@ import * as yaml from 'js-yaml';
 import * as vscode from 'vscode';
 import type { AIProviderType } from '../models/ProviderConfig';
 import type { IRuleConfig } from '../models/RuleConfig';
-import type { IReviewConfig} from './ReviewConfig';
+import type { IReviewConfig } from './ReviewConfig';
 import { DEFAULT_REVIEW_CONFIG } from './ReviewConfig';
 import { ConfigurationValidator } from './ConfigurationValidator';
 import { FileUtils } from '../utils/FileUtils';
@@ -14,7 +14,7 @@ import { CONFIG_FILE_NAME, DEFAULT_MODELS, DEFAULT_PROVIDER_MAX_CONTEXT_CHARS } 
  * Loads and merges review configuration from three sources (highest → lowest priority):
  *
  * 1. VS Code settings   — provider/model (machine-specific, never in git)
- * 2. .reviewai.yml      — rules/javaVersion (project-specific, committed to git)
+ * 2. .reviewai.yaml / .reviewai.yml — rules/javaVersion (project-specific, committed to git)
  * 3. DEFAULT_REVIEW_CONFIG — fallback for any unspecified fields
  *
  * Sources are merged field-by-field so that the most specific value always wins.
@@ -45,27 +45,59 @@ export class ConfigurationLoader {
   private async loadFromYaml(
     workspaceRoot: string
   ): Promise<Partial<IReviewConfig>> {
-    const configPath = path.join(workspaceRoot, CONFIG_FILE_NAME);
-    const exists = await FileUtils.fileExists(configPath);
+    const candidateFiles = [
+      '.reviewai.yaml',
+      '.reviewai.yml',
+      'reviewai.yaml',
+      'reviewai.yml',
+      '.review-ai.yaml',
+      '.review-ai.yml',
+      'reviews.yaml',
+      'reviews.yml',
+      CONFIG_FILE_NAME,
+    ];
 
-    if (!exists) {
-      this.logger.debug(`No ${CONFIG_FILE_NAME} found in workspace root.`);
-      return {};
+    // 1. Check workspace root for configuration files (.reviewai.yaml, .reviewai.yml, etc.)
+    for (const fileName of candidateFiles) {
+      const configPath = path.join(workspaceRoot, fileName);
+      if (await FileUtils.fileExists(configPath)) {
+        try {
+          const content = await FileUtils.readText(configPath);
+          const parsed = yaml.load(content);
+          this.validator.validate(parsed);
+          this.logger.info(`Loaded configuration from ${fileName}.`);
+          return this.mapYamlToConfig(parsed as Record<string, unknown>);
+        } catch (error) {
+          const msg = error instanceof Error ? error.message : String(error);
+          this.logger.warn(
+            `Failed to parse ${fileName}: ${msg}. Falling back to defaults.`
+          );
+        }
+      }
     }
 
-    try {
-      const content = await FileUtils.readText(configPath);
-      const parsed = yaml.load(content);
-      this.validator.validate(parsed);
-      this.logger.info(`Loaded ${CONFIG_FILE_NAME}.`);
-      return this.mapYamlToConfig(parsed as Record<string, unknown>);
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : String(error);
-      this.logger.warn(
-        `Failed to parse ${CONFIG_FILE_NAME}: ${msg}. Falling back to defaults.`
-      );
-      return {};
+    // 2. Search subfolders for YAML configuration files if not found in root
+    if (vscode.workspace && typeof vscode.workspace.findFiles === 'function') {
+      try {
+        const found = await vscode.workspace.findFiles(
+          new vscode.RelativePattern(workspaceRoot, '**/*review*ai*.y*ml'),
+          '**/{node_modules,.git,target,build,out,dist}/**'
+        );
+        if (found.length > 0) {
+          const targetPath = found[0].fsPath;
+          const content = await FileUtils.readText(targetPath);
+          const parsed = yaml.load(content);
+          this.validator.validate(parsed);
+          this.logger.info(`Loaded configuration from subfolder config file ${targetPath}.`);
+          return this.mapYamlToConfig(parsed as Record<string, unknown>);
+        }
+      } catch (err) {
+        this.logger.debug(`Subfolder config file discovery note: ${err}`);
+      }
     }
+
+    this.logger.debug('No custom configuration file (.reviewai.yaml, .reviewai.yml, etc.) found in workspace.');
+    return {};
   }
 
   private loadFromVSCodeSettings(): Partial<IReviewConfig> {
@@ -188,7 +220,7 @@ export class ConfigurationLoader {
 
   /**
    * Maps raw YAML fields to IReviewConfig fields.
-   * Handles the `aiProvider` alias used in .reviewai.yml.
+   * Handles the `aiProvider` alias used in .reviewai.yml / .reviewai.yaml.
    */
   private mapYamlToConfig(raw: Record<string, unknown>): Partial<IReviewConfig> {
     const partial: Record<string, unknown> = {};

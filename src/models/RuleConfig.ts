@@ -13,3 +13,17 @@ export interface IRuleConfig {
   /** Override the default score deduction for this rule */
   readonly scoreDeduction?: number;
 }
+
+/**
+ * Rich rule definition accessible dynamically via MCP tools
+ */
+export interface IConfiguredRule {
+  readonly id: string;
+  readonly title: string;
+  readonly description: string;
+  readonly severity: Severity;
+  readonly category: string;
+  readonly enabled: boolean;
+  readonly example?: string;
+  readonly source: 'default' | 'config' | 'user';
+}

@@ -6,3 +6,4 @@ node_modules/
 .DS_Store
 releases/
 .review-ai/
+sample-java-project/

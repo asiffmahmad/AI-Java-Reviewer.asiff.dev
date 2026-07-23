@@ -5,7 +5,7 @@ import { ScoreCalculator } from '../../../scoring/ScoreCalculator';
 import { DEFAULT_REVIEW_CONFIG } from '../../../configuration/ReviewConfig';
 
 describe('ReviewAgent', () => {
-  it('orchestrates the review process using mock provider', async () => {
+  it('orchestrates the review process using mock provider and minimal promptText', async () => {
     const engine = new RuleEngine();
     const calculator = new ScoreCalculator();
     const agent = new ReviewAgent(engine, calculator);
@@ -19,6 +19,9 @@ describe('ReviewAgent', () => {
     const { reportMarkdown, promptText } = await agent.executeReview([], [], config, 'fake-key');
 
     assert.ok(reportMarkdown.includes('Mock Review'));
-    assert.ok(promptText.length > 0);
+    assert.ok(promptText.includes('# AI Java Reviewer'));
+    assert.ok(promptText.includes('readFile(path)'));
+    assert.strictEqual(promptText.includes('public class'), false);
+    assert.ok(promptText.length < 5000);
   });
 });

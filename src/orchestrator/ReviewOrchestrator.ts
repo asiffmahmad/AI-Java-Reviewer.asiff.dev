@@ -5,18 +5,29 @@ import type { IReviewOrchestrator } from '../commands/IReviewOrchestrator';
 import type { Logger } from '../utils/Logger';
 import type { SecretManager } from '../configuration/SecretManager';
 import { ConfigurationLoader } from '../configuration/ConfigurationLoader';
-import { RegexJavaParser } from '../parser/RegexJavaParser';
+import { JavaAstParser } from '../parser/JavaAstParser';
 import { DependencyParser } from '../parser/DependencyParser';
 import { RuleEngine } from '../rules/RuleEngine';
 import { ScoreCalculator } from '../scoring/ScoreCalculator';
 import { ReviewAgent } from '../ai/ReviewAgent';
 import { FileUtils } from '../utils/FileUtils';
 import { EXCLUDED_DIRECTORIES } from '../utils/constants';
+import { WorkspaceIndexer } from '../indexer/WorkspaceIndexer';
+import type { IJavaClass } from '../models';
 
-// Import our implemented rules
+// Import implemented static analysis rules
 import { FieldInjectionRule } from '../rules/FieldInjectionRule';
+import { MissingTransactionalRule } from '../rules/MissingTransactionalRule';
+import { RepositoryInControllerRule } from '../rules/RepositoryInControllerRule';
+import { SystemOutPrintlnRule } from '../rules/SystemOutPrintlnRule';
+import { HardcodedSecretRule } from '../rules/HardcodedSecretRule';
+import { NPlusOneQueryRule } from '../rules/NPlusOneQueryRule';
+import { MissingValidationRule } from '../rules/MissingValidationRule';
+import { FindAllWithoutPaginationRule } from '../rules/FindAllWithoutPaginationRule';
 
 export class ReviewOrchestrator implements IReviewOrchestrator {
+  private workspaceIndexer?: WorkspaceIndexer;
+
   constructor(
     private readonly logger: Logger,
     private readonly secretManager: SecretManager
@@ -27,10 +38,7 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
     if (!workspaceFolders || workspaceFolders.length === 0) {
       throw new Error('No active workspace folder found.');
     }
-    
-    // Determine the root for the review.
-    // If a URI was provided (e.g. from context menu), we use its workspace.
-    // Otherwise, we use the first workspace folder.
+
     let workspaceRoot = workspaceFolders[0].uri.fsPath;
     if (uri) {
       const folder = vscode.workspace.getWorkspaceFolder(uri);
@@ -54,44 +62,67 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
       }
     }
 
-    // 3. Scan Workspace or Target File
-    const excludePattern = `**/{${EXCLUDED_DIRECTORIES.join(',')},.gradle,bin,dist}/**`;
-    let javaFiles: vscode.Uri[] = [];
+    // 3. Initialize or retrieve Workspace Project Indexer
+    if (!this.workspaceIndexer) {
+      this.workspaceIndexer = new WorkspaceIndexer(this.logger);
+    }
+    const index = await this.workspaceIndexer.indexWorkspace(workspaceRoot);
 
-    if (uri && uri.fsPath.endsWith('.java') && fs.existsSync(uri.fsPath) && fs.statSync(uri.fsPath).isFile()) {
-      const rel = path.relative(workspaceRoot, uri.fsPath);
-      if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+    // 4. Determine Target Review File(s) across single files, directories (with subfolders), or full workspace
+    const parser = new JavaAstParser();
+    const excludePattern = `**/{${EXCLUDED_DIRECTORIES.join(',')},.gradle,bin,dist,target,out}/**`;
+    let targetClasses: IJavaClass[] = [];
+
+    if (uri && fs.existsSync(uri.fsPath)) {
+      const stat = fs.statSync(uri.fsPath);
+      if (stat.isFile() && uri.fsPath.endsWith('.java')) {
         this.logger.info(`Single file review requested: ${uri.fsPath}`);
-        javaFiles = [uri];
-      } else {
-        this.logger.warn(`Target file ${uri.fsPath} is outside current workspace. Falling back to workspace scan.`);
-        javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), excludePattern);
+        const content = await FileUtils.readText(uri.fsPath);
+        const parsed = parser.parse(content, uri.fsPath);
+        if (parsed) {
+          targetClasses = [parsed];
+        }
+      } else if (stat.isDirectory()) {
+        this.logger.info(`Directory review requested for folder and subfolders: ${uri.fsPath}`);
+        const dirPath = uri.fsPath;
+        targetClasses = index.getAllClasses().filter((c) => {
+          const rel = path.relative(dirPath, c.filePath);
+          return !rel.startsWith('..') && !path.isAbsolute(rel);
+        });
       }
-    } else {
-      javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), excludePattern);
     }
 
+    // If no URI target or no target classes found from URI, default to all workspace classes across all subfolders
+    if (targetClasses.length === 0) {
+      targetClasses = index.getAllClasses();
+    }
+
+    // Fallback if index has no classes (e.g. mock unit test environment)
+    if (targetClasses.length === 0) {
+      const javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), excludePattern);
+      for (const file of javaFiles) {
+        try {
+          const content = await FileUtils.readText(file.fsPath);
+          const parsed = parser.parse(content, file.fsPath);
+          if (parsed) {
+            targetClasses.push(parsed);
+          }
+        } catch {
+          // Ignore unreadable mock files
+        }
+      }
+    }
+
+    if (targetClasses.length === 0) {
+      throw new Error('No Java files found in the workspace to review.');
+    }
+
+    this.logger.info(`Target scope contains ${targetClasses.length} Java file(s) across subfolders.`);
+
+    // 5. Parse Build Dependencies
     const pomFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/pom.xml'), excludePattern);
     const gradleFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.gradle'), excludePattern);
 
-    if (javaFiles.length === 0) {
-      throw new Error('No Java files found in the workspace.');
-    }
-
-    this.logger.info(`Found ${javaFiles.length} Java files.`);
-
-    // 4. Parse Java Files
-    const parser = new RegexJavaParser();
-    const classes = [];
-    for (const file of javaFiles) {
-      const content = await FileUtils.readText(file.fsPath);
-      const javaClass = parser.parse(content, file.fsPath);
-      if (javaClass) {
-        classes.push(javaClass);
-      }
-    }
-
-    // 5. Parse Dependencies
     const depParser = new DependencyParser();
     const dependencies: string[] = [];
     for (const file of pomFiles) {
@@ -105,15 +136,23 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
 
     // 6. Setup Rule Engine
     const ruleEngine = new RuleEngine();
-    // Register the rules we have implemented so far
-    ruleEngine.registerRule(new FieldInjectionRule());
+    ruleEngine.registerRules([
+      new FieldInjectionRule(),
+      new MissingTransactionalRule(),
+      new RepositoryInControllerRule(),
+      new SystemOutPrintlnRule(),
+      new HardcodedSecretRule(),
+      new NPlusOneQueryRule(),
+      new MissingValidationRule(),
+      new FindAllWithoutPaginationRule(),
+    ]);
 
     // 7. Setup Agent
     const scoreCalculator = new ScoreCalculator();
-    const agent = new ReviewAgent(ruleEngine, scoreCalculator);
+    const agent = new ReviewAgent(ruleEngine, scoreCalculator, this.logger);
 
-    // 8. Execute AI Review
-    this.logger.info('Executing AI review...');
+    // 8. Execute AI Review with Context Builder & On-Demand Retrieval
+    this.logger.info('Executing AI review with Context Builder & On-Demand Tool Retrieval...');
     const timestamp = Date.now();
     const promptFileName = `prompt-${timestamp}.md`;
     const outDir = path.join(workspaceRoot, config.outputDir || '.review-ai/reports');
@@ -123,25 +162,26 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
     const outFilePath = path.join(outDir, `review-${timestamp}.md`);
     const promptFilePath = path.join(outDir, promptFileName);
 
-    const { reportMarkdown, promptText } = await agent.executeReview(classes, dependencies, config, apiKey, promptFileName);
-
-    // Format full prompt file artifact with usage instructions header
-    const fullPromptContent =
-      `# 📝 AI Java Reviewer — Copy-Paste Web Prompt Artifact\n\n` +
-      `> **Instructions**: Copy the entire text below and paste it into **Antigravity Chat**, **Google Gemini**, **ChatGPT**, or **Claude Web**.\n\n` +
-      `---\n\n` +
-      promptText;
+    const { reportMarkdown, promptText } = await agent.executeReview(
+      targetClasses,
+      dependencies,
+      config,
+      apiKey,
+      promptFileName,
+      index,
+      workspaceRoot
+    );
 
     // 9. Save Both Outputs
-    await FileUtils.writeText(promptFilePath, fullPromptContent);
+    await FileUtils.writeText(promptFilePath, promptText);
     await FileUtils.writeText(outFilePath, reportMarkdown);
     this.logger.info(`Review report saved to ${outFilePath}`);
-    this.logger.info(`Full prompt artifact saved to ${promptFilePath}`);
+    this.logger.info(`Prompt artifact saved to ${promptFilePath}`);
 
     // 10. Open Review Report in VS Code
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(outFilePath));
     await vscode.window.showTextDocument(doc);
-    
+
     // Explicitly notify the user with the absolute paths
     vscode.window.showInformationMessage(`AI Review complete! Saved report: ${outFilePath} | Saved prompt: ${promptFilePath}`);
   }

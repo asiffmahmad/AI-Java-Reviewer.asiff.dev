@@ -180,4 +180,45 @@ describe('PromptGenerator', () => {
     assert.ok(prompt.includes('Stereotype: @Service'));
     assert.ok(prompt.includes('Methods (1): createUser()'));
   });
+
+  it('identifies unreferenced / unused files in workspace review', () => {
+    const classes: IJavaClass[] = [
+      {
+        className: 'MainController',
+        filePath: '/src/main/java/com/example/MainController.java',
+        rawContent: '@RestController public class MainController {}',
+        packageName: 'com.example',
+        fullyQualifiedName: 'com.example.MainController',
+        classType: 'class',
+        stereotype: 'RestController',
+        annotations: ['RestController'],
+        fields: [],
+        methods: [],
+        interfaces: [],
+        imports: [],
+        lineCount: 5
+      },
+      {
+        className: 'DeadUtility',
+        filePath: '/src/main/java/com/example/DeadUtility.java',
+        rawContent: 'public class DeadUtility { public void doNothing() {} }',
+        packageName: 'com.example',
+        fullyQualifiedName: 'com.example.DeadUtility',
+        classType: 'class',
+        stereotype: 'none',
+        annotations: [],
+        fields: [],
+        methods: [],
+        interfaces: [],
+        imports: [],
+        lineCount: 5
+      }
+    ];
+
+    const mockConfig = { javaVersion: '17', framework: 'spring-boot' } as any;
+    const prompt = generator.generate(classes, [], [], mockScore, mockConfig);
+
+    assert.ok(prompt.includes('Potentially Unused / Unreferenced Files'));
+    assert.ok(prompt.includes('DeadUtility'));
+  });
 });

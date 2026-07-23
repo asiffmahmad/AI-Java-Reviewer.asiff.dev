@@ -86,8 +86,8 @@ export class RegexJavaParser implements IJavaParser {
     interfaces: string[];
     startIndex: number;
   } | undefined {
-    // Matches: public abstract class MyClass extends Base implements I1, I2 {
-    const regex = /(?:public|protected|private|abstract|final|static|\s)*\b(class|interface|enum|record)\s+([a-zA-Z0-9_]+)(?:\s+extends\s+([a-zA-Z0-9_<>,.?\s]+))?(?:\s+implements\s+([a-zA-Z0-9_<>,.?\s]+))?\s*\{/g;
+    // Matches: public abstract class MyClass<T> extends Base implements I1, I2 {
+    const regex = /(?:public|protected|private|abstract|final|static|\s)*\b(class|interface|enum|record)\s+([a-zA-Z0-9_]+)(?:\s*<[^>]*>)?(?:\s+extends\s+([a-zA-Z0-9_<>,.?\s]+))?(?:\s+implements\s+([a-zA-Z0-9_<>,.?\s]+))?\s*\{/g;
     const match = regex.exec(source);
     if (!match) { return undefined; }
 

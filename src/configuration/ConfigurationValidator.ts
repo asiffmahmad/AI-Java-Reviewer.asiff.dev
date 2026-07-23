@@ -49,12 +49,13 @@ export class ConfigurationValidator {
   // ── Field validators ────────────────────────────────────────────────────────
 
   private validateProvider(obj: Record<string, unknown>): void {
-    if (obj['provider'] === undefined) {
+    const providerValue = obj['aiProvider'] ?? obj['provider'];
+    if (providerValue === undefined) {
       return;
     }
-    if (!VALID_PROVIDERS.includes(obj['provider'] as AIProviderType)) {
+    if (!VALID_PROVIDERS.includes(providerValue as AIProviderType)) {
       throw new Error(
-        `Invalid aiProvider "${String(obj['provider'])}". ` +
+        `Invalid aiProvider "${String(providerValue)}". ` +
           `Must be one of: ${VALID_PROVIDERS.join(', ')}.`
       );
     }

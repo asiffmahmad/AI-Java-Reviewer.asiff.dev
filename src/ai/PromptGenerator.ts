@@ -46,8 +46,19 @@ export class PromptGenerator {
     // Stage 8: Relevant Code Snippets
     stages.push(this.buildSourceFilesBlock(classes, config.maxContextChars ?? 32000));
 
+    // Stage 8.5: Potentially Unused / Unreferenced Files Analysis
+    const unusedFiles = this.detectUnusedClasses(classes);
+    if (unusedFiles.length > 0) {
+      let unusedBlock = '## Potentially Unused / Unreferenced Files\n';
+      unusedBlock += 'The static analyzer identified the following Java files that have no references or imports from other classes in the project context:\n';
+      unusedFiles.forEach(u => {
+        unusedBlock += `- \`${u.relPath}\` (${u.packageName ? u.packageName + '.' : ''}${u.className}) — No imports or references detected across other workspace files.\n`;
+      });
+      stages.push(unusedBlock.trim());
+    }
+
     // Stage 9: Task Instructions & Expected Output Format
-    stages.push(this.buildTaskInstructions(classes, config));
+    stages.push(this.buildTaskInstructions(classes, config, unusedFiles.length > 0));
 
     // Join all pipeline stages
     const rawPrompt = stages.join('\n\n');
@@ -230,7 +241,7 @@ export class PromptGenerator {
   /**
    * Stage 9: Task Instructions & Expected Output Format
    */
-  private buildTaskInstructions(classes: IJavaClass[], config: IReviewConfig): string {
+  private buildTaskInstructions(classes: IJavaClass[], config: IReviewConfig, hasUnusedFiles = false): string {
     const targetScope = classes.length === 1 && classes[0]
       ? `target file "${this.sanitizeFilePath(classes[0].filePath)}"`
       : `provided ${classes.length} Java files`;
@@ -248,10 +259,54 @@ export class PromptGenerator {
       block += '3. **Technical Explanation**: Why it matters and enterprise impact.\n';
       block += '4. **Recommended Fix & Improved Code**: Provide ready-to-use refactored Java code snippets.\n';
       block += '5. **Best Practices**: Enterprise Java / Spring Boot design patterns.\n';
+      if (hasUnusedFiles) {
+        block += '6. **Unused / Dead Code Files**: Evaluate and confirm unreferenced files or dead code that can be safely pruned.\n';
+      }
     }
 
     block += '\n\n**Output Constraints**: Return your complete response in clean, professional Markdown with valid ````java code blocks.';
     return block;
+  }
+
+  /**
+   * Helper: Identifies potentially unused / unreferenced Java classes in the workspace.
+   */
+  private detectUnusedClasses(classes: IJavaClass[]): Array<{ className: string; relPath: string; packageName: string }> {
+    if (classes.length <= 1) return [];
+
+    const unused: Array<{ className: string; relPath: string; packageName: string }> = [];
+
+    for (const target of classes) {
+      if (!target.className) continue;
+
+      const isEntrypoint =
+        target.rawContent.includes('public static void main') ||
+        target.annotations?.some(a => ['SpringBootApplication', 'Controller', 'RestController', 'Configuration', 'Component', 'Service', 'Repository'].includes(a)) ||
+        ['Controller', 'RestController', 'Configuration', 'Component', 'Service', 'Repository'].includes(target.stereotype);
+
+      if (isEntrypoint) continue;
+
+      const isReferenced = classes.some(other => {
+        if (other === target) return false;
+        return (
+          other.imports?.includes(target.className) ||
+          other.imports?.includes(target.fullyQualifiedName) ||
+          other.superClass === target.className ||
+          other.interfaces?.includes(target.className) ||
+          other.rawContent.includes(target.className)
+        );
+      });
+
+      if (!isReferenced) {
+        unused.push({
+          className: target.className,
+          relPath: this.sanitizeFilePath(target.filePath),
+          packageName: target.packageName,
+        });
+      }
+    }
+
+    return unused;
   }
 
   /**

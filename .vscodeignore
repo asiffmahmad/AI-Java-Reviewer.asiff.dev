@@ -12,3 +12,9 @@ out/tests/**
 node_modules/**
 .mocharc.json
 .reviewai.yml
+.review-ai/**
+.env*
+**/.env*
+sample-java-project/**
+releases/**
+build.sh
