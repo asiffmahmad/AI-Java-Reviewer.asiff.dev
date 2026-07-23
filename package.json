@@ -156,7 +156,7 @@
     "axios": "^1.7.7",
     "java-parser": "^2.3.0",
     "js-yaml": "^4.1.0",
-    "openai": "^4.68.0"
+    "openai": "^6.48.0"
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
