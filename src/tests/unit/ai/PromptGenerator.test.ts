@@ -118,4 +118,66 @@ describe('PromptGenerator', () => {
     assert.ok(prompt.includes('ClassA.java'));
     assert.ok(prompt.includes('omitted to fit within maxContextChars limit'));
   });
+
+  it('sanitizes absolute system paths from findings and file headers', () => {
+    const classes: IJavaClass[] = [{
+      className: 'UserService',
+      filePath: '/Users/asiff/Documents/projects/backend/src/main/java/com/example/service/UserService.java',
+      rawContent: 'public class UserService { public void createUser() {} }',
+      packageName: 'com.example.service',
+      fullyQualifiedName: 'com.example.service.UserService',
+      classType: 'class',
+      stereotype: 'Service',
+      annotations: ['Service'],
+      fields: [],
+      methods: [{
+        name: 'createUser',
+        returnType: 'void',
+        parameters: [],
+        annotations: [],
+        lineNumber: 1,
+        visibility: 'public',
+        isStatic: false,
+        isAbstract: false,
+        isSynchronized: false,
+        body: '',
+        throwsExceptions: []
+      }],
+      interfaces: [],
+      imports: [],
+      lineCount: 10
+    }];
+
+    const findings: IFinding[] = [{
+      ruleId: 'FIELD_INJECTION',
+      ruleName: 'Field Injection',
+      severity: 'critical',
+      category: 'architecture',
+      message: 'Avoid field injection',
+      recommendation: 'Use constructor injection',
+      filePath: '/Users/asiff/Documents/projects/backend/src/main/java/com/example/service/UserService.java',
+      lineNumber: 5,
+      scoreDeduction: 15
+    }];
+
+    const mockConfig = {
+      javaVersion: '21',
+      framework: 'spring-boot',
+      systemPrompt: 'Senior Architect',
+      taskPrompt: 'Review code'
+    } as any;
+
+    const prompt = generator.generate(classes, [], findings, mockScore, mockConfig);
+
+    // Absolute user directory must NOT appear anywhere in the prompt
+    assert.strictEqual(prompt.includes('/Users/asiff/Documents/projects/backend'), false);
+
+    // Relative path should appear
+    assert.ok(prompt.includes('src/main/java/com/example/service/UserService.java'));
+    assert.ok(prompt.includes('Target File: src/main/java/com/example/service/UserService.java'));
+    assert.ok(prompt.includes('Package: com.example.service'));
+    assert.ok(prompt.includes('Class: UserService (class)'));
+    assert.ok(prompt.includes('Stereotype: @Service'));
+    assert.ok(prompt.includes('Methods (1): createUser()'));
+  });
 });

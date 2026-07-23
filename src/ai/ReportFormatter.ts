@@ -77,10 +77,11 @@ export class ReportFormatter {
         else if (f.severity === 'minor') severityBadge = 'ℹ️ **MINOR**';
 
         const fileBasename = path.basename(f.filePath);
+        const relPath = this.sanitizeFilePath(f.filePath);
         md += `### Issue #${idx + 1}: ${f.message} (${severityBadge})\n\n`;
         md += `- **Category:** \`${f.category}\`  \n`;
         md += `- **File Location:** \`${fileBasename}\` (Line ${f.lineNumber})  \n`;
-        md += `- **Full Path:** \`${f.filePath}\`  \n`;
+        md += `- **Relative Path:** \`${relPath}\`  \n`;
         md += `- **Rule Reference:** \`${f.ruleId}\`  \n`;
         md += `- **Actionable Recommendation:** ${f.recommendation}\n\n`;
       });
@@ -102,5 +103,14 @@ export class ReportFormatter {
     md += `Copy and paste its content directly into **Antigravity Chat**, **Google Gemini**, **ChatGPT**, or **Claude Web**.\n`;
 
     return md;
+  }
+
+  private sanitizeFilePath(filePath: string): string {
+    if (!filePath) return '';
+    const clean = filePath.replace(/\\/g, '/');
+    const srcIdx = clean.toLowerCase().indexOf('/src/');
+    if (srcIdx !== -1) return clean.slice(srcIdx + 1);
+    const parts = clean.split('/').filter(Boolean);
+    return parts.length > 3 ? parts.slice(-3).join('/') : parts.join('/');
   }
 }

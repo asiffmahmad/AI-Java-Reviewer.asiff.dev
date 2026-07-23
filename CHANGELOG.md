@@ -5,6 +5,12 @@ All notable changes to the "AI Java Reviewer" extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.9] - 2026-07-23
+### Added
+- **Modular 9-Stage Prompt Pipeline**: Structured Java AST metadata context, build tool detection (Maven/Gradle), component scope context, and unescaped linebreaks.
+- **Pre-Dispatch Prompt Validator**: Automated `PromptValidator` sanitizes absolute system paths, redacts sensitive API keys and tokens, deduplicates organizational rules, and validates code fence syntax.
+- **Enterprise Security Hardening**: Workspace path containment checks for single-file URI reviews, path sanitization in Markdown report outputs, and dynamic report location resolution in `ShowReportCommand`.
+
 ## [1.2.8] - 2026-07-22
 ### Added
 - Multi-vendor model discovery in `vscode-lm` supporting Antigravity, Google Gemini, GitHub Copilot, Anthropic, and custom LM providers.

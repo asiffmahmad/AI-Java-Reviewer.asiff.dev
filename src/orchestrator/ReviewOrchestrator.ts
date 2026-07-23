@@ -59,8 +59,14 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
     let javaFiles: vscode.Uri[] = [];
 
     if (uri && uri.fsPath.endsWith('.java') && fs.existsSync(uri.fsPath) && fs.statSync(uri.fsPath).isFile()) {
-      this.logger.info(`Single file review requested: ${uri.fsPath}`);
-      javaFiles = [uri];
+      const rel = path.relative(workspaceRoot, uri.fsPath);
+      if (!rel.startsWith('..') && !path.isAbsolute(rel)) {
+        this.logger.info(`Single file review requested: ${uri.fsPath}`);
+        javaFiles = [uri];
+      } else {
+        this.logger.warn(`Target file ${uri.fsPath} is outside current workspace. Falling back to workspace scan.`);
+        javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), excludePattern);
+      }
     } else {
       javaFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.java'), excludePattern);
     }
