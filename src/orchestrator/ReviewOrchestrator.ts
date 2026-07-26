@@ -24,6 +24,9 @@ import { HardcodedSecretRule } from '../rules/HardcodedSecretRule';
 import { NPlusOneQueryRule } from '../rules/NPlusOneQueryRule';
 import { MissingValidationRule } from '../rules/MissingValidationRule';
 import { FindAllWithoutPaginationRule } from '../rules/FindAllWithoutPaginationRule';
+import { CircularDependencyRule } from '../rules/CircularDependencyRule';
+import { MissingLoggingRule } from '../rules/MissingLoggingRule';
+import { MissingExceptionHandlerRule } from '../rules/MissingExceptionHandlerRule';
 
 export class ReviewOrchestrator implements IReviewOrchestrator {
   private workspaceIndexer?: WorkspaceIndexer;
@@ -135,6 +138,9 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
     }
 
     // 6. Setup Rule Engine
+    CircularDependencyRule.projectIndex = index;
+    MissingExceptionHandlerRule.projectIndex = index;
+
     const ruleEngine = new RuleEngine();
     ruleEngine.registerRules([
       new FieldInjectionRule(),
@@ -145,6 +151,9 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
       new NPlusOneQueryRule(),
       new MissingValidationRule(),
       new FindAllWithoutPaginationRule(),
+      new CircularDependencyRule(),
+      new MissingLoggingRule(),
+      new MissingExceptionHandlerRule(),
     ]);
 
     // 7. Setup Agent

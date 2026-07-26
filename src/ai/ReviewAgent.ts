@@ -71,7 +71,7 @@ export class ReviewAgent {
       workspaceRoot,
     });
 
-    // 5. Invoke LLM with agent tool loop
+    // 5. Invoke LLM with agent tool loop or fallback to single pass review
     let baseUrl: string | undefined;
     if (config.provider === 'ollama') {
       baseUrl = config.ollamaBaseUrl;
@@ -80,13 +80,18 @@ export class ReviewAgent {
     }
 
     let aiReview = '';
+    let finalPrompt = seedPrompt;
     try {
       const llmProvider = LLMProviderFactory.createProvider(config.provider, apiKey, config.model, baseUrl);
-      if (index) {
+      const supportsTools = typeof llmProvider.supportsTools === 'function' && llmProvider.supportsTools() && typeof llmProvider.generateToolResponse === 'function';
+
+      if (supportsTools && index) {
         const loop = new AgenticReviewLoop(this.toolRegistry, 5, this.logger);
         aiReview = await loop.runLoop(llmProvider, seedPrompt, index, contextState);
       } else {
-        aiReview = await llmProvider.generateReview(seedPrompt);
+        this.logger?.info('Provider does not support interactive tools or index missing. Executing single-pass fallback review.');
+        finalPrompt = this.contextBuilder.buildSinglePassContext(classes, dependencies, findings, score, config, workspaceRoot);
+        aiReview = await llmProvider.generateReview(finalPrompt);
       }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : String(err);
@@ -105,7 +110,7 @@ export class ReviewAgent {
 
     return {
       reportMarkdown,
-      promptText: seedPrompt,
+      promptText: finalPrompt,
     };
   }
 }

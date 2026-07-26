@@ -35,8 +35,10 @@ export class WorkspaceIndexer implements vscode.Disposable {
 
     this.logger?.info(`Indexing ${javaFiles.length} Java source files...`);
 
-    for (const file of javaFiles) {
-      await this.indexFile(file.fsPath);
+    const batchSize = 20;
+    for (let i = 0; i < javaFiles.length; i += batchSize) {
+      const batch = javaFiles.slice(i, i + batchSize);
+      await Promise.all(batch.map((file) => this.indexFile(file.fsPath)));
     }
 
     this.logger?.info(

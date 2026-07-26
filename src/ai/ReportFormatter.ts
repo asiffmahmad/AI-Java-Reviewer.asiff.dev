@@ -9,7 +9,7 @@ export class ReportFormatter {
   public format(
     score: IProjectScore,
     findings: IFinding[],
-    aiContent: string,
+    _aiContent: string,
     fileCount: number,
     promptFileName?: string
   ): string {
@@ -171,36 +171,36 @@ export class ReportFormatter {
         md += `- **Business Impact**: ${fixMeta.businessImpact}\n`;
         md += `- **Technical Impact**: ${fixMeta.technicalRationale}\n\n`;
 
-        // Affected File Locations
-        md += `#### 📍 Affected Workspace Locations (${group.findings.length})\n`;
-        for (const f of group.findings.slice(0, 10)) {
+        // Affected File Locations & Specific Fixes
+        md += `#### 📍 Affected Workspace Locations & Specific Fixes (${group.findings.length})\n\n`;
+        for (let i = 0; i < group.findings.length; i++) {
+          const f = group.findings[i];
           const relPath = this.sanitizeFilePath(f.filePath);
-          md += `- \`${relPath}:${f.lineNumber}\` — ${f.message}\n`;
-        }
-        if (group.findings.length > 10) {
-          md += `- ... and ${group.findings.length - 10} additional occurrences in workspace.\n`;
-        }
-        md += `\n`;
+          const fFixMeta = ReportFixGenerator.getFixMetadata(ruleId, group.ruleName, f);
 
-        // Code Snippet Evidence
-        const activeFindingWithSnippet = group.findings.find(f => f.codeSnippet) || sampleFinding;
-        if (activeFindingWithSnippet?.codeSnippet) {
-          md += `#### 🔍 Real Source Code Evidence Snippet\n`;
-          md += `\`\`\`java\n${activeFindingWithSnippet.codeSnippet}\n\`\`\`\n\n`;
-        }
+          md += `##### Occurrence ${i + 1}: \`${relPath}:${f.lineNumber}\`\n\n`;
+          md += `* **Issue:** ${f.message}\n`;
+          md += `* **Why this occurs:** ${fFixMeta.technicalRationale || fFixMeta.detectionLogic}\n`;
+          md += `* **Business/Technical Impact:** ${fFixMeta.businessImpact}\n\n`;
 
-        // Before & After Fix Examples & Unified Diff
-        if (fixMeta.beforeSnippet && fixMeta.afterSnippet) {
-          md += `#### 🛠️ Real Code Fix & Unified Diff\n\n`;
-          md += `**Before Fix (Non-compliant):**\n`;
-          md += `\`\`\`java\n${fixMeta.beforeSnippet}\n\`\`\`\n\n`;
-          md += `**After Fix (Compliant):**\n`;
-          md += `\`\`\`java\n${fixMeta.afterSnippet}\n\`\`\`\n\n`;
-        }
+          if (f.codeSnippet) {
+            md += `**Real Source Code Evidence:**\n`;
+            md += `\`\`\`java\n${f.codeSnippet}\n\`\`\`\n\n`;
+          }
 
-        if (fixMeta.diffSnippet) {
-          md += `**Unified Diff:**\n`;
-          md += `\`\`\`diff\n${fixMeta.diffSnippet}\n\`\`\`\n\n`;
+          if (fFixMeta.beforeSnippet && fFixMeta.afterSnippet) {
+            md += `**Expected Fix & Remediation:**\n\n`;
+            md += `*Before Fix (Non-compliant):*\n`;
+            md += `\`\`\`java\n${fFixMeta.beforeSnippet}\n\`\`\`\n\n`;
+            md += `*After Fix (Compliant):*\n`;
+            md += `\`\`\`java\n${fFixMeta.afterSnippet}\n\`\`\`\n\n`;
+          }
+
+          if (fFixMeta.diffSnippet) {
+            md += `**Unified Diff:**\n`;
+            md += `\`\`\`diff\n${fFixMeta.diffSnippet}\n\`\`\`\n\n`;
+          }
+          md += `---\n\n`;
         }
 
         // Authoritative References
@@ -216,9 +216,6 @@ export class ReportFormatter {
       }
     }
 
-    // 3. AI Architectural Analysis
-    md += `## 🤖 AI Architectural Analysis & Recommendations\n\n`;
-    md += aiContent + `\n\n---\n\n`;
 
     // 4. Prioritized Remediation Roadmap
     md += `## 🗺️ Prioritized Remediation Roadmap & Sprint Plan\n\n`;
