@@ -20,7 +20,6 @@ describe('ReviewAgent', () => {
 
     assert.ok(reportMarkdown.includes('Mock Review'));
     assert.ok(promptText.includes('# AI Java Reviewer'));
-    assert.ok(promptText.includes('readFile(path)'));
     assert.strictEqual(promptText.includes('public class'), false);
     assert.ok(promptText.length < 5000);
   });

@@ -6,7 +6,7 @@ import { RULE_IDS } from '../utils/constants';
 export class MissingLoggingRule implements IRule {
   public readonly id = RULE_IDS.MISSING_LOGGING;
   public readonly name = 'Missing Proper Logging Framework';
-  public readonly category: RuleCategory = 'maintainability';
+  public readonly category: RuleCategory = 'quality';
   public readonly defaultSeverity: Severity = 'minor';
 
   public evaluate(javaClass: IJavaClass, _config: IReviewConfig): IFinding[] {

@@ -9,7 +9,7 @@ export class ReportFormatter {
   public format(
     score: IProjectScore,
     findings: IFinding[],
-    _aiContent: string,
+    aiContent: string,
     fileCount: number,
     promptFileName?: string
   ): string {
@@ -216,6 +216,11 @@ export class ReportFormatter {
       }
     }
 
+
+    if (aiContent) {
+      md += `## 🤖 AI Architectural Analysis\n\n`;
+      md += `${aiContent}\n\n`;
+    }
 
     // 4. Prioritized Remediation Roadmap
     md += `## 🗺️ Prioritized Remediation Roadmap & Sprint Plan\n\n`;

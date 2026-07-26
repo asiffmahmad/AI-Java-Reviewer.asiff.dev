@@ -107,10 +107,9 @@ export class ContextBuilder {
     dependencies: string[],
     findings: IFinding[],
     score: any,
-    config: IReviewConfig,
+    _config: IReviewConfig,
     workspaceRoot?: string
   ): string {
-    const targetPaths = targetClasses.map((c) => this.sanitizePath(c.filePath, workspaceRoot)).filter(Boolean);
     
     let prompt = `# AI Java Reviewer — Enterprise Single-Pass Review Prompt\n\n`;
     prompt += `You are an Autonomous Senior Principal Java & Spring Boot Architect conducting a comprehensive code review.\n\n`;
