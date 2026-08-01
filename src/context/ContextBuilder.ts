@@ -107,74 +107,12 @@ export class ContextBuilder {
     dependencies: string[],
     findings: IFinding[],
     score: any,
-    _config: IReviewConfig,
-    workspaceRoot?: string
+    config: IReviewConfig,
+    workspaceRoot?: string,
+    mrDetails?: { mrUrl?: string; isCatalogServices?: boolean; impactedFiles?: Array<{ filePath: string; status: string; lineRanges: string[] }>; rawDiff?: string }
   ): string {
-    
-    let prompt = `# AI Java Reviewer — Enterprise Single-Pass Review Prompt\n\n`;
-    prompt += `You are an Autonomous Senior Principal Java & Spring Boot Architect conducting a comprehensive code review.\n\n`;
-
-    prompt += `## 📊 Project Scorecard\n`;
-    prompt += `- Overall Score: **${score.overallScore} / 100**\n`;
-    for (const cat of ['architecture', 'security', 'performance', 'maintainability', 'testing']) {
-      const catScore = (score as any)[`${cat}Score`] ?? 100;
-      prompt += `- ${cat.toUpperCase()} Category Score: **${catScore} / 100**\n`;
-    }
-    prompt += `\n`;
-
-    prompt += `## 🚨 Pre-Identified Static Violations (${findings.length})\n`;
-    if (findings.length === 0) {
-      prompt += `No static violations pre-detected by local rules.\n\n`;
-    } else {
-      for (const f of findings) {
-        prompt += `### Finding: \`${f.ruleId}\`\n`;
-        prompt += `- **Rule Name**: ${f.ruleName}\n`;
-        prompt += `- **Severity**: ${f.severity.toUpperCase()}\n`;
-        prompt += `- **Category**: ${f.category.toUpperCase()}\n`;
-        prompt += `- **File**: \`${this.sanitizePath(f.filePath, workspaceRoot)}:${f.lineNumber}\`\n`;
-        prompt += `- **Message**: ${f.message}\n`;
-        prompt += `- **Recommendation**: ${f.recommendation}\n\n`;
-      }
-    }
-
-    prompt += `## 📦 Build Dependencies (${dependencies.length})\n`;
-    for (const d of dependencies.slice(0, 20)) {
-      prompt += `- \`${d}\`\n`;
-    }
-    if (dependencies.length > 20) {
-      prompt += `- ... and ${dependencies.length - 20} more dependencies.\n`;
-    }
-    prompt += `\n`;
-
-    prompt += `## 📂 Target Source Files Under Review (${targetClasses.length})\n`;
-    let totalChars = 0;
-    const MAX_CHARS = 300000; // safe context boundary limit (~75k tokens)
-
-    for (const cls of targetClasses) {
-      const relPath = this.sanitizePath(cls.filePath, workspaceRoot);
-      const codeSnippet = cls.rawContent;
-      
-      if (totalChars + codeSnippet.length > MAX_CHARS) {
-        prompt += `### [TRUNCATED] File: \`${relPath}\` (File size is too large to fit in prompt budget)\n\n`;
-        continue;
-      }
-      
-      totalChars += codeSnippet.length;
-      prompt += `### File: \`${relPath}\`\n`;
-      prompt += `\`\`\`java\n`;
-      prompt += codeSnippet;
-      prompt += `\n\`\`\`\n\n`;
-    }
-
-    prompt += `## 🎯 Your Task\n`;
-    prompt += `Produce the **AI Architectural Analysis & Recommendations** and **Prioritized Remediation Roadmap** sections of the final report.\n`;
-    prompt += `Specifically:\n`;
-    prompt += `1. **Verify Static Findings**: Audit the pre-identified static violations. Explain the root causes and suggest real-world refactorings with unified diffs.\n`;
-    prompt += `2. **Identify Deeper Architectural/Design Defect Patterns**: Critique the classes against SOLID principles, layering guidelines, transaction boundaries, and Spring Boot best practices.\n`;
-    prompt += `3. **Prioritized Roadmap**: Create a sprint plan divided into phases based on priority (Phase 1: Immediate/Security, Phase 2: Short-term, etc.).\n\n`;
-    
-    prompt += `Ensure all recommendations are actionable, specific to the provided source code, and free of placeholder code.\n`;
-
-    return PromptValidator.validateAndSanitize(prompt);
+    const generator = new (require('../ai/PromptGenerator').PromptGenerator)();
+    return generator.generate(targetClasses, dependencies, findings, score, config, mrDetails, workspaceRoot);
   }
 }
+

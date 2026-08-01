@@ -61,7 +61,7 @@ describe('PromptGenerator', () => {
 
     assert.ok(prompt.includes('A test finding'));
     assert.ok(prompt.includes('Fix it'));
-    assert.ok(prompt.includes('public class Test {}'));
+    assert.ok(prompt.includes('Test.java'));
     assert.ok(prompt.includes('spring-boot-starter-web'));
     assert.ok(prompt.includes('Grade: A'));
     assert.ok(prompt.includes('You are an expert'));
@@ -111,7 +111,7 @@ describe('PromptGenerator', () => {
     const mockConfig = {
       systemPrompt: 'System Prompt',
       taskPrompt: 'Task Prompt',
-      maxContextChars: 600
+      maxContextChars: 80
     } as any;
 
     const prompt = generator.generate(classes, [], [], mockScore, mockConfig);
@@ -220,5 +220,35 @@ describe('PromptGenerator', () => {
 
     assert.ok(prompt.includes('Potentially Unused / Unreferenced Files'));
     assert.ok(prompt.includes('DeadUtility'));
+  });
+
+  it('matches and incorporates built-in and workspace review guidelines', () => {
+    const workspaceRoot = '/Users/asiff/Documents/projects/codeReview';
+    const classes: IJavaClass[] = [];
+    const mockConfig = { javaVersion: '21', framework: 'spring-boot' } as any;
+
+    const mrDetails = {
+      mrUrl: 'https://gitlab.example.com/owner/repo/-/merge_requests/24'
+    };
+
+    const prompt = generator.generate(classes, [], [], mockScore, mockConfig, mrDetails, workspaceRoot);
+
+    // Verify presence of all major sections
+    assert.ok(prompt.includes('REVIEW WORKFLOW'));
+    assert.ok(prompt.includes('REVIEW CHECKLIST'));
+    assert.ok(prompt.includes('1. ARCHITECTURE & LAYERING'));
+    assert.ok(prompt.includes('2. MODERN JAVA'));
+    assert.ok(prompt.includes('3. NAMING & PACKAGE STRUCTURE'));
+    assert.ok(prompt.includes('4. DATA ACCESS / ORM / DATABASE'));
+    assert.ok(prompt.includes('5. VALIDATION'));
+    assert.ok(prompt.includes('6. SECURITY'));
+    assert.ok(prompt.includes('7. EXCEPTION HANDLING & LOGGING'));
+    assert.ok(prompt.includes('8. ASYNC / PERFORMANCE / CACHING'));
+    assert.ok(prompt.includes('9. MESSAGING / QUEUES'));
+    assert.ok(prompt.includes('OUTPUT FORMAT'));
+    assert.ok(prompt.includes('🔴 CRITICAL'));
+    assert.ok(prompt.includes('🔴 MAJOR'));
+    assert.ok(prompt.includes('🟡 MINOR'));
+    assert.ok(prompt.includes('🔵 SUGGESTION'));
   });
 });

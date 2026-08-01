@@ -1,8 +1,8 @@
 {
   "name": "ai-java-reviewer",
   "displayName": "AI Java Reviewer",
-  "description": "Enterprise-grade AI-powered Java & Spring Boot code review — deterministic static analysis with AI explanations.",
-  "version": "1.3.15",
+  "description": "Enterprise-grade AI Java & Spring Boot Code Reviewer — Automated MR/PR diff review, static analysis, security scanner, and AI explanations.",
+  "version": "1.3.40",
   "publisher": "asiff",
   "license": "MIT",
   "repository": {
@@ -22,6 +22,7 @@
   },
   "categories": [
     "Linters",
+    "Programming Languages",
     "Other"
   ],
   "icon": "assets/logo.png",
@@ -35,7 +36,11 @@
     "spring-boot",
     "code-review",
     "ai",
-    "static-analysis"
+    "static-analysis",
+    "pull-request",
+    "merge-request",
+    "security",
+    "copilot"
   ],
   "activationEvents": [
     "workspaceContains:**/pom.xml",
@@ -51,6 +56,12 @@
         "title": "Run AI Review",
         "category": "AI Java Reviewer",
         "icon": "$(search)"
+      },
+      {
+        "command": "aijavareviewer.runMrReview",
+        "title": "Run AI MR/PR Review",
+        "category": "AI Java Reviewer",
+        "icon": "$(git-pull-request)"
       },
       {
         "command": "aijavareviewer.configureProvider",
@@ -71,11 +82,19 @@
           "command": "aijavareviewer.runReview",
           "when": "explorerResourceIsFolder",
           "group": "navigation"
+        },
+        {
+          "command": "aijavareviewer.runMrReview",
+          "when": "explorerResourceIsFolder",
+          "group": "navigation"
         }
       ],
       "commandPalette": [
         {
           "command": "aijavareviewer.runReview"
+        },
+        {
+          "command": "aijavareviewer.runMrReview"
         },
         {
           "command": "aijavareviewer.configureProvider"
@@ -88,6 +107,16 @@
     "configuration": {
       "title": "AI Java Reviewer",
       "properties": {
+        "aijavareviewer.gitlabToken": {
+          "type": "string",
+          "default": "",
+          "description": "Personal Access Token (PAT) for private GitLab MR diff API access."
+        },
+        "aijavareviewer.githubToken": {
+          "type": "string",
+          "default": "",
+          "description": "Personal Access Token (PAT) for private GitHub PR diff API access."
+        },
         "aijavareviewer.provider": {
           "type": "string",
           "enum": [

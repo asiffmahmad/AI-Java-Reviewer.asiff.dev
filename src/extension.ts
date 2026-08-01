@@ -5,8 +5,8 @@ import { SecretManager } from './configuration/SecretManager';
 import { CommandRegistry } from './commands/CommandRegistry';
 import { ConfigureProviderCommand } from './commands/ConfigureProviderCommand';
 import { RunReviewCommand } from './commands/RunReviewCommand';
+import { RunMrReviewCommand } from './commands/RunMrReviewCommand';
 import { ShowReportCommand } from './commands/ShowReportCommand';
-
 
 import { ReviewOrchestrator } from './orchestrator/ReviewOrchestrator';
 
@@ -31,6 +31,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     [
       new ConfigureProviderCommand(secretManager),
       new RunReviewCommand(orchestrator),
+      new RunMrReviewCommand(orchestrator),
       new ShowReportCommand(),
     ],
     context

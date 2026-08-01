@@ -51,7 +51,8 @@ export class ReviewAgent {
     apiKey: string,
     promptFileName?: string,
     index?: ProjectIndex,
-    workspaceRoot?: string
+    workspaceRoot?: string,
+    mrDetails?: any
   ): Promise<IReviewResult> {
     // 1. Evaluate deterministic rules
     const findings = this.ruleEngine.evaluate(classes, config);
@@ -85,12 +86,12 @@ export class ReviewAgent {
       const llmProvider = LLMProviderFactory.createProvider(config.provider, apiKey, config.model, baseUrl);
       const supportsTools = typeof llmProvider.supportsTools === 'function' && llmProvider.supportsTools() && typeof llmProvider.generateToolResponse === 'function';
 
-      if (supportsTools && index) {
+      if (supportsTools && index && !mrDetails) {
         const loop = new AgenticReviewLoop(this.toolRegistry, 5, this.logger);
         aiReview = await loop.runLoop(llmProvider, seedPrompt, index, contextState);
       } else {
-        this.logger?.info('Provider does not support interactive tools or index missing. Executing single-pass fallback review.');
-        finalPrompt = this.contextBuilder.buildSinglePassContext(classes, dependencies, findings, score, config, workspaceRoot);
+        this.logger?.info('Executing single-pass comprehensive review prompt.');
+        finalPrompt = this.contextBuilder.buildSinglePassContext(classes, dependencies, findings, score, config, workspaceRoot, mrDetails);
         aiReview = await llmProvider.generateReview(finalPrompt);
       }
     } catch (err: unknown) {

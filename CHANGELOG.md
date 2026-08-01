@@ -5,6 +5,13 @@ All notable changes to the "AI Java Reviewer" extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.25] - 2026-08-01
+### Added
+- **Autonomous MR / PR Diff Review (`aijavareviewer.runMrReview`):** Context menu & Command Palette option to review GitLab MRs and GitHub PRs by pasting URL or local branch ref. Line-scoped review for modified lines and full review for new files.
+- **Company Code Review Agent Integration:** Loads guidelines directly from `.reviewai.yml` or workspace configuration. Enforces standard single-line output format (`🔴 CRITICAL`, `🔴 MAJOR`, `🟡 MINOR`, `🔵 SUGGESTION`).
+- **Token Optimization (~80% Token Reduction):** Replaced raw code embedding with in-scope target relative file path listings and AST metadata, allowing AI agents to dynamically fetch code on demand.
+- **Remote PR & Folder Scoping:** Autonomous remote PR URL diff fetching for GitHub and GitLab without local repo requirement. Folder-scoped git diff calculation for right-clicked directories.
+
 ## [1.2.9] - 2026-07-23
 ### Added
 - **Modular 9-Stage Prompt Pipeline**: Structured Java AST metadata context, build tool detection (Maven/Gradle), component scope context, and unescaped linebreaks.

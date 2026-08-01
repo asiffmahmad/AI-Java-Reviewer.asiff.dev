@@ -169,9 +169,8 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
       fs.mkdirSync(outDir, { recursive: true });
     }
     const outFilePath = path.join(outDir, `review-${timestamp}.md`);
-    const promptFilePath = path.join(outDir, promptFileName);
 
-    const { reportMarkdown, promptText } = await agent.executeReview(
+    const { reportMarkdown } = await agent.executeReview(
       targetClasses,
       dependencies,
       config,
@@ -181,17 +180,192 @@ export class ReviewOrchestrator implements IReviewOrchestrator {
       workspaceRoot
     );
 
-    // 9. Save Both Outputs
-    await FileUtils.writeText(promptFilePath, promptText);
+    // 9. Save Review Report Output
     await FileUtils.writeText(outFilePath, reportMarkdown);
     this.logger.info(`Review report saved to ${outFilePath}`);
-    this.logger.info(`Prompt artifact saved to ${promptFilePath}`);
 
     // 10. Open Review Report in VS Code
     const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(outFilePath));
     await vscode.window.showTextDocument(doc);
 
-    // Explicitly notify the user with the absolute paths
-    vscode.window.showInformationMessage(`AI Review complete! Saved report: ${outFilePath} | Saved prompt: ${promptFilePath}`);
+    // Explicitly notify the user
+    vscode.window.showInformationMessage(`AI Review complete! Saved report: ${outFilePath}`);
+  }
+
+  public async runMrReview(mrUrlOrBranch: string, uri?: vscode.Uri): Promise<void> {
+    const workspaceFolders = vscode.workspace.workspaceFolders;
+    if (!workspaceFolders || workspaceFolders.length === 0) {
+      throw new Error('No active workspace folder found.');
+    }
+
+    let workspaceRoot = workspaceFolders[0].uri.fsPath;
+    let targetSubpath: string | undefined;
+    const isUrlReview = /^https?:\/\//i.test(mrUrlOrBranch.trim());
+    if (!isUrlReview && uri && fs.existsSync(uri.fsPath)) {
+      const folder = vscode.workspace.getWorkspaceFolder(uri);
+      if (folder) {
+        workspaceRoot = folder.uri.fsPath;
+        const rel = path.relative(workspaceRoot, uri.fsPath);
+        if (rel && !rel.startsWith('..')) {
+          targetSubpath = rel.replace(/\\/g, '/');
+        }
+      }
+    }
+
+    this.logger.info(`Starting MR/PR Review for URL/ref: ${mrUrlOrBranch}${targetSubpath ? ` (folder: ${targetSubpath})` : ''}`);
+
+    // 1. Resolve MR Details & Diff Line Ranges
+    const { GitMrService } = require('../git/GitMrService');
+    const gitMrService = new GitMrService(this.logger);
+    const mrDetails = await gitMrService.resolveMrDetails(mrUrlOrBranch, workspaceRoot, targetSubpath);
+
+    // 2. Load Configuration & API Keys
+    const configLoader = new ConfigurationLoader(this.logger);
+    const config = await configLoader.load(workspaceRoot);
+    let apiKey = '';
+    if (config.provider !== 'ollama' && config.provider !== 'vscode-lm') {
+      const key = await this.secretManager.getKey(config.provider);
+      if (key) apiKey = key;
+    }
+
+    // 3. Initialize Workspace Indexer
+    if (!this.workspaceIndexer) {
+      this.workspaceIndexer = new WorkspaceIndexer(this.logger);
+    }
+    const index = await this.workspaceIndexer.indexWorkspace(workspaceRoot);
+
+    // 4. Filter Target Classes to Changed Files in MR (scoped to target subpath if specified)
+    const parser = new JavaAstParser();
+    let targetClasses: IJavaClass[] = [];
+
+    const changedPaths = mrDetails.impactedFiles.map((f: any) => f.filePath);
+    let candidateClasses = index.getAllClasses();
+    if (!isUrlReview && targetSubpath && uri && fs.existsSync(uri.fsPath)) {
+      candidateClasses = candidateClasses.filter((c) => {
+        const rel = path.relative(uri.fsPath, c.filePath);
+        return !rel.startsWith('..') && !path.isAbsolute(rel);
+      });
+    }
+
+    targetClasses = candidateClasses.filter((c) => {
+      return changedPaths.some((p: string) => {
+        const pNorm = p.replace(/\\/g, '/');
+        const cNorm = c.filePath.replace(/\\/g, '/');
+        return cNorm.endsWith(pNorm) || pNorm.endsWith(cNorm) || path.basename(cNorm) === path.basename(pNorm);
+      });
+    });
+
+    if (targetClasses.length === 0) {
+      // Parse modified files directly from MR diff
+      for (const impFile of mrDetails.impactedFiles) {
+        let absPath = path.isAbsolute(impFile.filePath) ? impFile.filePath : path.join(workspaceRoot, impFile.filePath);
+        if (!fs.existsSync(absPath)) {
+          const fileName = path.basename(impFile.filePath);
+          const found = await vscode.workspace.findFiles(`**/${fileName}`);
+          if (found.length > 0) absPath = found[0].fsPath;
+        }
+
+        if (fs.existsSync(absPath) && absPath.endsWith('.java')) {
+          try {
+            const content = await FileUtils.readText(absPath);
+            const parsed = parser.parse(content, absPath);
+            if (parsed) targetClasses.push(parsed);
+          } catch {
+            // ignore unreadable
+          }
+        }
+      }
+    }
+
+    if (targetClasses.length === 0) {
+      if (mrDetails.impactedFiles.length > 0) {
+        // Create virtual target classes for all impacted files in MR diff so review runs on any file!
+        for (const impFile of mrDetails.impactedFiles) {
+          const baseName = path.basename(impFile.filePath);
+          targetClasses.push({
+            className: baseName,
+            fullyQualifiedName: impFile.filePath,
+            filePath: impFile.filePath,
+            packageName: 'default',
+            classType: 'class',
+            stereotype: 'none',
+            annotations: [],
+            interfaces: [],
+            methods: [],
+            fields: [],
+            imports: [],
+            lineCount: 100,
+            rawContent: impFile.diffHunks || '',
+          });
+        }
+      } else {
+        targetClasses = index.getAllClasses();
+      }
+    }
+
+    // 5. Parse Build Dependencies
+    const excludePattern = `**/{${EXCLUDED_DIRECTORIES.join(',')},.gradle,bin,dist,target,out}/**`;
+    const pomFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/pom.xml'), excludePattern);
+    const gradleFiles = await vscode.workspace.findFiles(new vscode.RelativePattern(workspaceRoot, '**/*.gradle'), excludePattern);
+
+    const depParser = new DependencyParser();
+    const dependencies: string[] = [];
+    for (const file of pomFiles) {
+      const content = await FileUtils.readText(file.fsPath);
+      dependencies.push(...depParser.parsePom(content));
+    }
+    for (const file of gradleFiles) {
+      const content = await FileUtils.readText(file.fsPath);
+      dependencies.push(...depParser.parseGradle(content));
+    }
+
+    // 6. Setup Rule Engine & Agent
+    CircularDependencyRule.projectIndex = index;
+    MissingExceptionHandlerRule.projectIndex = index;
+
+    const ruleEngine = new RuleEngine();
+    ruleEngine.registerRules([
+      new FieldInjectionRule(),
+      new MissingTransactionalRule(),
+      new RepositoryInControllerRule(),
+      new SystemOutPrintlnRule(),
+      new HardcodedSecretRule(),
+      new NPlusOneQueryRule(),
+      new MissingValidationRule(),
+      new FindAllWithoutPaginationRule(),
+      new CircularDependencyRule(),
+      new MissingLoggingRule(),
+      new MissingExceptionHandlerRule(),
+    ]);
+
+    const scoreCalculator = new ScoreCalculator();
+    const agent = new ReviewAgent(ruleEngine, scoreCalculator, this.logger);
+
+    // 7. Execute Review with MR Details Context
+    const timestamp = Date.now();
+    const promptFileName = `prompt-mr-${timestamp}.md`;
+    const outDir = path.join(workspaceRoot, config.outputDir || '.review-ai/reports');
+    if (!fs.existsSync(outDir)) {
+      fs.mkdirSync(outDir, { recursive: true });
+    }
+    const outFilePath = path.join(outDir, `review-mr-${timestamp}.md`);
+
+    const { reportMarkdown } = await agent.executeReview(
+      targetClasses,
+      dependencies,
+      config,
+      apiKey,
+      promptFileName,
+      index,
+      workspaceRoot,
+      mrDetails
+    );
+
+    // 8. Save Report Output & Open Report
+    await FileUtils.writeText(outFilePath, reportMarkdown);
+
+    const doc = await vscode.workspace.openTextDocument(vscode.Uri.file(outFilePath));
+    await vscode.window.showTextDocument(doc);
+    vscode.window.showInformationMessage(`AI MR Review complete! Report: ${outFilePath}`);
   }
 }

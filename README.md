@@ -27,12 +27,16 @@
 
 ## Features
 
-* **Deterministic Rule Engine:** Extremely fast local AST parsing detects architectural anti-patterns (Field Injection, Missing `@Transactional`, Raw console logging) in milliseconds.
-* **Executive Scorecard & Reporting:** Redesigned reports with Letter Grade badges (A+ to F), Executive Scorecard tables, and Category/Severity matrices.
-* **Fail-Safe Prompt Artifacts:** Automatically writes `prompt-<timestamp>.md` alongside reports for easy copy-pasting into Web AI interfaces (Antigravity Chat, Gemini, ChatGPT, Claude).
-* **Deterministic Output Guarantee:** Enforces `temperature: 0.0` across all providers for reproducible, consistent review outputs.
-* **Privacy First:** We use the native VS Code `SecretStorage` API. Your API keys are encrypted in your OS Keychain and never persisted to plain text files.
-* **Multi-Provider & IDE Support:** Connect to VS Code Chat LM API (Antigravity, Copilot), OpenAI, Google Gemini, Anthropic Claude, OpenRouter, Groq, or run 100% locally with Ollama.
+* **Autonomous MR / PR Diff Review:** Right-click any file, folder, or use Command Palette to run **"Run AI MR/PR Review"**. Paste any public or private GitLab MR URL (`https://gitlab.example.com/.../merge_requests/24`), GitHub PR URL (`https://github.com/owner/repo/pull/2`), or local branch ref (`origin/main...HEAD`). Parses unified diff hunks and scopes code review strictly to modified line ranges.
+* **Deterministic AST Rule Engine:** Local syntax parser evaluates 11 static analysis rules in milliseconds to detect critical architectural flaws (Field Injection `@Autowired`, Raw `System.out.println`, Missing `@Transactional`, N+1 Repository queries in loops, Missing `@Valid` on `@RequestBody`, Unpaginated `findAll()`, Hardcoded secrets).
+* **Enterprise Guideline Alignment:** Loads custom organizational review guidelines directly from `.reviewai.yml` or project rules. Enforces standard single-line severity formatting (`🔴 CRITICAL`, `🔴 MAJOR`, `🟡 MINOR`, `🔵 SUGGESTION`) with zero truncation (reports ALL findings without artificial caps).
+* **Token Optimization (~80% Savings):** Replaces raw code dumps with target path listings (`## In-Scope Target File Paths`), reducing prompt payload from ~16,700 tokens to ~3,000 tokens per review.
+* **Interactive MCP Agentic Discovery Tools:** Provides 9 built-in Model Context Protocol (MCP) tools (`readFile`, `readMethod`, `getClassSummary`, `getClassSource`, `getMethod`, `findSpringBeans`, `getStaticFindings`, `getScorecard`, `getDependencies`) for tool-capable AI models.
+* **Executive Scorecard & Grading:** Calculates overall letter grades (A+ to F) and category scores across Architecture, Security, Performance, and Testing with interactive Markdown issue cards.
+* **Fail-Safe Prompt Artifacts:** Automatically generates `prompt-<timestamp>.md` alongside reports in `.review-ai/reports/` for instant copy-pasting into Web AI interfaces (Antigravity Chat, Gemini, ChatGPT, Claude).
+* **Enterprise Customization (`.reviewai.yml`):** Define project Java version, framework (Spring Boot, Quarkus, Micronaut, Jakarta EE), custom organizational rules, rule severity overrides, and custom report output directories.
+* **Multi-Provider & Keyless IDE Support:** Connect to VS Code Chat LM API (`vscode-lm` for native Antigravity and Copilot Chat models), OpenAI (`gpt-4o`), Google Gemini (`gemini-1.5-pro`), Anthropic Claude (`claude-3-5-sonnet`), Groq (`llama-3.3-70b`), OpenRouter, or run 100% offline with Ollama.
+* **OS Keychain Encryption & Privacy First:** Encrypts API keys using native VS Code `SecretStorage` API (OS Keychain). Automatically redacts secrets (`glpat-`, `ghp_`, `sk-proj-`) and absolute system paths before sending prompts.
 
 ## Supported AI Providers
 - **VS Code & Antigravity Chat API (`vscode-lm`):** Native IDE models (Antigravity, Copilot Chat, Gemini), no external API key required. Supports manual model family fallback.
@@ -59,27 +63,37 @@ You can install the extension directly from the Visual Studio Code Marketplace:
 
 ## How to Use It (Step-by-Step)
 
-1. Open any Java/Spring Boot workspace in VS Code.
-2. Open the Command Palette (`Cmd+Shift+P` on Mac, `Ctrl+Shift+P` on Windows).
-3. Type **AI Java Reviewer: Configure AI Provider** and hit Enter.
-   - Select your preferred provider (e.g., `openai`, `groq`, `claude`).
-   - Enter your API Key. (This is securely stored in your OS Keychain, never on disk).
-4. Type **AI Java Reviewer: Run AI Review** and hit Enter.
+### 1. Configure AI Provider
+1. Open the Command Palette (`Cmd+Shift+P` on Mac, `Ctrl+Shift+P` on Windows).
+2. Type **AI Java Reviewer: Configure AI Provider** and hit Enter.
+3. Select your preferred provider (e.g., `vscode-lm`, `openai`, `gemini`, `claude`, `groq`, `ollama`).
+4. Enter your API Key or select your local/host model. (API keys are encrypted in VS Code `SecretStorage`).
+
+### 2. Full Workspace Review
+1. Open any Java / Spring Boot project in VS Code.
+2. Open the Command Palette and type **AI Java Reviewer: Run AI Review**.
+3. Alternatively, right-click any folder or `.java` file in the Explorer and select **Run AI Review**.
+
+### 3. MR / PR Diff Review (GitHub & GitLab)
+1. Open the Command Palette and select **AI Java Reviewer: Run AI MR/PR Review** (or right-click a folder/file).
+2. Paste your GitLab MR URL (e.g. `https://gitlab.example.com/owner/repo/-/merge_requests/24`), GitHub PR URL (e.g. `https://github.com/owner/repo/pull/2`), or local branch ref (`origin/main...HEAD`).
+3. The extension automatically fetches unified diff hunks, extracts modified line ranges, and performs a targeted line-by-line code review!
 
 ### What happens when you run a review?
-When you trigger a review, the extension does not blindly send your entire codebase to an LLM. Instead, it follows a strict pipeline:
-1. **Deterministic Scan**: The local engine parses your Java syntax trees and Maven/Gradle dependencies to find explicit architectural anti-patterns (e.g., Field Injection, missing `@Transactional`).
-2. **Scoring**: It grades your codebase (A through F) across Architecture, Security, and Testing.
-3. **Contextual Prompt Generation**: It generates a highly dense, deterministic prompt instructing the AI on exactly what rules were broken.
-4. **AI Generation**: It streams this context to your configured AI Provider (OpenAI, Groq, etc.) to fetch actionable refactoring advice.
+When you trigger a review, the extension follows a strict, privacy-first pipeline:
+1. **Deterministic Scan**: Local engine parses Java AST syntax trees and dependencies to find explicit architectural anti-patterns in milliseconds.
+2. **Scoring**: Grades code quality (A+ through F) across Architecture, Security, Performance, and Testing.
+3. **Company Guidelines Integration**: Automatically loads organizational guidelines from `.reviewai.yml` or project rules configuration.
+4. **Contextual Prompt Generation**: Generates a dense, token-optimized prompt with target file paths and findings.
+5. **AI Refactoring & Explanations**: Streams context to your configured AI Provider to produce actionable refactoring diffs.
 
 ### Where is the result saved?
 Once the AI finishes generating the review, the extension automatically:
 1. Creates a `.review-ai/reports/` folder at the root of your workspace.
-2. Saves a permanent Markdown file named `review-{timestamp}.md` containing the full AI analysis.
-3. Opens the Markdown file natively in a new VS Code editor tab for you to read.
+2. Saves a permanent Markdown report (`review-{timestamp}.md`) and fail-safe prompt artifact (`prompt-{timestamp}.md`).
+3. Opens the Markdown report natively in a new VS Code editor tab.
 
-You can also pull up the most recent report at any time by running the **AI Java Reviewer: Show Latest Report** command!
+You can view the latest report at any time by running **AI Java Reviewer: Show Latest Report**!
 
 ## Configuration
 
@@ -93,65 +107,41 @@ To customize how the AI Java Reviewer behaves, you can create a configuration fi
 Here is a complete, exhaustive sample of everything you can configure. You can copy-paste this into your `.reviewai.yml` file and modify what you need:
 
 ```yaml
-# The Java version your project uses
+# Target Java version
 javaVersion: "21"
 
-# The framework (spring-boot | jakarta-ee | quarkus | micronaut)
+# Framework type (spring-boot | jakarta-ee | quarkus | micronaut)
 framework: "spring-boot"
 
-# Force a specific AI provider (Overrides VS Code settings)
+# Optional AI provider & model override (Overrides VS Code settings)
 # provider: "openai"
-
-# Force a specific model (Overrides VS Code settings)
 # model: "gpt-4o"
 
-# Output directory for the Markdown reports (relative to project root)
+# Output directory for generated Markdown reports
 outputDir: ".review-ai/reports"
 
-# Override Ollama Base URL (if using local provider)
-# ollamaBaseUrl: "http://localhost:11434"
+# --- AI Persona & Prompt Overrides (Optional) ---
+systemPrompt: "You are a senior software architect specializing in Java & Spring Boot code reviews."
 
-# Override OpenRouter Base URL
-# openRouterBaseUrl: "https://openrouter.ai/api/v1"
-
-# --- AI Prompt Customization (Optional) ---
-# Use these to completely override the AI's persona and task instructions
-systemPrompt: "You are a highly strict senior Java security architect."
-taskPrompt: "Review the code and provide only a list of security vulnerabilities in JSON format."
-
-# --- Custom Organizational Rules ---
-# Add any custom English instruction or business logic restriction.
-# The AI is forced to enforce these exact rules during the review!
-# You can use a flat list or group them by category.
+# --- Custom Organizational Rules (Sample) ---
 rules:
   dependency_injection:
-    - constructor injection only
-    - no field injection
+    - "Use constructor injection only; avoid field injection with @Autowired."
   security:
-    - no hardcoded secrets or credentials
-    - passwords must be encoded
+    - "Never hardcode API keys or secret tokens."
   architecture:
-    - all DTO classes must end with "Response" or "Request"
+    - "Keep Controllers thin and move business logic into Service classes."
 
-# --- Organizational Severity Definitions ---
-# Instruct the AI on how to classify severity for your organization
+# --- Severity Classification Overrides (Sample) ---
 severity:
   BLOCKER:
-    - hardcoded secret
-    - SQL Injection
+    - "hardcoded secret"
+    - "SQL Injection risk"
   CRITICAL:
-    - controller accessing repository
-    - missing authorization
+    - "field injection"
+    - "direct repository access from controller"
 
-# --- Custom Review Categories ---
-# Force the AI to output its findings strictly mapped to these categories
-review_categories:
-  - Security
-  - Architecture
-  - Performance
-
-# --- Rule Severity Overrides ---
-# Upgrade or downgrade the severity of built-in deterministic rules
+# --- Static Rule Overrides (Sample) ---
 ruleOverrides:
   - id: "RULE_FIELD_INJECTION"
     severity: "critical"
@@ -160,10 +150,14 @@ ruleOverrides:
 ### Custom Organizational Rules
 The `rules:` array in `.reviewai.yml` is an incredibly powerful feature. You can add **any custom English instruction or business logic restriction** to this list. The `ReviewOrchestrator` dynamically injects these into the AI's prompt, forcing the AI to strictly enforce your organization's unique coding standards during the review.
 
+## Search Tags & Keywords
+
+`java` • `spring` • `spring-boot` • `code-review` • `ai` • `static-analysis` • `pull-request` • `merge-request` • `pr-review` • `mr-review` • `security` • `linter` • `copilot` • `antigravity` • `gemini` • `openai` • `claude` • `groq` • `ollama` • `sonarqube` • `clean-architecture`
+
 ## Contributing
 
 See our [Contributing Guide](CONTRIBUTING.md) for details on how to set up the repository for local development and submit Pull Requests.
 
 ## License
 
-MIT © Google AI Java Reviewer
+MIT © AI Java Reviewer

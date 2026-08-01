@@ -6,9 +6,11 @@
 export class PromptValidator {
   private static readonly SECRET_PATTERNS = [
     /sk-[a-zA-Z0-9\-_]{20,}/g, // OpenAI API Keys (including sk-proj-...)
+    /glpat-[a-zA-Z0-9\-_]{20,}/g, // GitLab Personal Access Tokens
     /AKIA[0-9A-Z]{16}/g, // AWS Access Key IDs
     /ghp_[a-zA-Z0-9]{36}/g, // GitHub Personal Access Tokens
     /Bearer\s+[a-zA-Z0-9\-\._~\+\/]+=*/gi, // OAuth Bearer Tokens
+    /(?:api_key|private_token|secret_key|access_token)\s*=\s*['"][a-zA-Z0-9\-_]{16,}['"]/gi, // Hardcoded token assignments
   ];
 
   private static readonly ABSOLUTE_PATH_PATTERNS = [

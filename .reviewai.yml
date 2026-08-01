@@ -1,292 +1,120 @@
-# AI Java Reviewer — Project Configuration
-# Place this file in the root of your Java project.
+# ==============================================================================
+# AI Java Reviewer — Enterprise Configuration File (.reviewai.yml)
+# ==============================================================================
 
-# --- Core Settings ---
-# Java version used in this project
-# javaVersion: "21"
+javaVersion: "21"
+framework: "spring-boot"
+outputDir: ".review-ai/reports"
 
-# Framework (spring-boot | jakarta-ee | quarkus | micronaut)
-# framework: "spring-boot"
+systemPrompt: "You are a senior software engineer and meticulous code reviewer. You are an expert in modern Java and enterprise backend microservice architectures."
 
-# --- AI Configuration (Optional Overrides) ---
-# aiProvider: "openai"
-# model: "gpt-4o"
-# systemPrompt: "You are a senior Java architect reviewing code for a financial institution."
-# taskPrompt: "Review the code and provide only a list of security vulnerabilities in JSON format."
-# outputDir: ".review-ai/reports"
-
-# --- Custom Organizational Rules ---
-# Add any custom English instruction or business logic restriction.
-# The AI is forced to enforce these exact rules during the review!
-
+# --- Custom Organizational Rules (Categorized from Java_Code_Review_Agent.md) ---
 rules:
+  architecture_and_layering:
+    - "Respect layered flow end-to-end (Spring: Controller -> Service -> Repository -> DB; Play/Akka: Controller -> Actor -> UseCase -> Gateway -> DB)."
+    - "No business logic in controllers; no direct DB access from controllers, actors, processors, writers, or listeners – those must go through the Service layer."
+    - "Repositories/DAOs contain data-access queries ONLY – no business logic and no computed helper methods; move method logic into the Service."
+    - "Ensure repository/DAO interfaces carry the project stereotype annotation (@Repository) where required."
+    - "Entity/model classes hold state and mapping ONLY – move decision methods (e.g. isTopNode()) to the Service layer."
+    - "Mappers map field-to-field ONLY – no DB access and no computation. Compute in the Service and pass the result into the mapper."
+    - "Do NOT hand-write object-to-object conversion inside processors/services/controllers (e.g. private dtoToModel()/modelToDto()) – use MapStruct or dedicated Mappers."
+    - "Do not return projections when the entity/model can be returned; return the model to the service and map only needed fields into the DTO."
+    - "Put each query in the repository that owns that table/entity."
+    - "Processors/handlers must not return persistence entities as their result payload – return a dedicated Result/DTO object."
+    - "Deduplicate identical helper methods across classes."
 
-  dependency_injection:
-    - constructor injection only
-    - no field injection
-    - prefer final fields
-    - inject interfaces instead of implementations
-    - avoid static dependency injection
-    - avoid manual object creation of Spring beans
+  modern_java:
+    - "Use Java Records instead of plain POJOs/DTOs for immutable data holders."
+    - "Convert immutable value/row/holder classes to records instead of using @Builder on a mutable class."
+    - "Use sealed classes/interfaces for closed type hierarchies."
+    - "Use pattern-matching instanceof (no redundant manual casts)."
+    - "Use switch expressions (arrow syntax) instead of switch statements."
+    - "Use text blocks for multiline strings (SQL, JSON, HTML)."
+    - "Use local variable type inference (var) where it improves readability."
+    - "Avoid redundant boxing/unboxing conversions."
+    - "Do NOT reimplement standard library/framework utilities (StringUtils.hasText, Objects.requireNonNullElse)."
+    - "Remove redundant explicit null checks that guard a call to an already null-safe utility."
 
-  spring:
-    - use @Service for business layer
-    - use @Repository for persistence layer
-    - use @RestController for REST APIs
-    - repositories must not be accessed directly from controllers
-    - services should contain business logic
-    - controllers should only orchestrate requests
-    - avoid business logic in controllers
-    - avoid business logic in repositories
-    - use @ConfigurationProperties instead of @Value
-    - use Spring Profiles correctly
+  naming_and_package_structure:
+    - "Class, method, and variable names must follow standard Java conventions (*Request, *Response, *Service, *Repository, *Model)."
+    - "ALL DTO and API fields MUST be camelCase (never PascalCase/UpperCamel like IsGCFOrder, OrderNumber)."
+    - "Variable names must reflect their CURRENT type/content after a refactor."
+    - "Entity/model classes must append 'Model' suffix AND match DB table name (e.g. XxumoPsQueueVModel)."
+    - "Repository names must reflect the entity/table they serve (full-table-name convention)."
+    - "Name packages for their real contents (e.g. SQS payloads in 'message' package)."
+    - "DB columns must be UPPER_SNAKE_CASE in @Column annotations and mapped to correctly-typed fields."
 
-  transactions:
-    - use @Transactional on service write methods
-    - use readOnly=true for read methods
-    - avoid @Transactional on controllers
-    - avoid long-running transactions
-    - avoid self invocation of transactional methods
-
-  logging:
-    - prefer SLF4J over System.out.println
-    - no System.out.println
-    - no printStackTrace
-    - use parameterized logging
-    - avoid string concatenation in log statements
-    - log exceptions with stack traces
-    - never log passwords
-    - never log tokens
-    - never log secrets
+  data_access_and_database:
+    - "Build queries with standard data-access API (Spring Data derived queries / @Query; Ebean finder API)."
+    - "Use single-result API for single results (findOne() / Optional) instead of findList().get(0)."
+    - "Transactions must be explicitly bounded (declarative @Transactional with rollbackFor = Exception.class)."
+    - "Avoid N+1 query problems in loops (fetch/join; select only needed columns)."
+    - "Raw/native queries MUST be fully parameterized (never string concatenation) to prevent SQL Injection."
+    - "Use pagination for large result sets; guard empty IN () clauses."
+    - "Ensure new tables/models have audit columns (createdBy, createdDate, modifiedBy, modifiedDate)."
+    - "Perform length check and truncation before persisting into narrower columns (e.g. SUBSTR at DB level or StringUtils.left in code)."
+    - "Replace repeated repository.save(entity) calls on JPA repository with native write queries for SYSDATE consistency."
+    - "Use correct key types end to end (numeric IMS/order numbers passed as numeric types, not String)."
+    - "For core/domain DTOs, verify FIELD COMPLETENESS against source model/table/contract."
+    - "LEGACY XML -> JSON MIGRATION: verify EVERY piece of data that legacy consumers depended on is preserved."
+    - "Use ONE consistent DB current-time function across all queries on a table/column."
+    - "Never derive 'current time' from LocalDate/LocalDateTime.now() – use shared getCurrentDateTime(zoneId) utility."
+    - "DB SCRIPT PLACEMENT: Verify new DB scripts live in the CORRECT release folder for this MR's target release."
 
   validation:
-    - validate all controller inputs with @Valid
-    - use Bean Validation annotations
-    - validate request parameters
-    - validate path variables
-    - avoid manual validation when Bean Validation exists
+    - "Request objects must declare field-level validation (@NotNull, @NotBlank, @Size, @Pattern, @Email)."
+    - "Validation failures must be surfaced consistently at controller boundary using @Valid."
 
   security:
-    - no hardcoded secrets
-    - no hardcoded credentials
-    - passwords must be encoded
-    - sanitize user input
-    - prevent SQL Injection
-    - prevent XSS
-    - prevent command injection
-    - use prepared statements
-    - never expose internal exceptions
-    - never expose stack traces
-    - secure REST endpoints
-    - validate JWT tokens
-    - use HTTPS
-    - secure cookies
-    - avoid sensitive response data
+    - "All endpoints must be explicitly authorized; untrusted input validated and bounded."
+    - "Sensitive fields (passwords, tokens, PII) must be kept out of logs and unmasked API responses."
+    - "Flag all SQL and command injection risks."
+    - "Secrets must be read from Secret Manager at runtime, NOT hardcoded in Java or properties."
 
-  exception_handling:
-    - use @ControllerAdvice
-    - create custom exceptions
-    - avoid catching Exception
-    - catch specific exceptions
-    - never ignore exceptions
-    - wrap external exceptions
-    - return meaningful error responses
+  exception_handling_and_logging:
+    - "Exceptions must be caught at the right layer and never silently swallowed."
+    - "Logger MUST be called with exception OBJECT as final argument (logger.error(\"Context message\", e))."
+    - "Guard type casts with instanceof."
+    - "Guard entry methods against NULL domain inputs before dereferencing."
+    - "Use try-with-resources for all AutoCloseable resources."
+    - "Use parameterized log messages (no string concatenation)."
+    - "Audit/history records MUST be persisted ONLY AFTER governing DB transaction commits."
+    - "Preserve thread interrupt state on InterruptedException (Thread.currentThread().interrupt())."
+    - "In batch/loop processing, catch per-item failures locally so one failing item does not abort the whole batch."
 
-  repository:
-    - paginate large result sets
-    - avoid findAll without Pageable
-    - avoid N+1 queries
-    - use projections when possible
-    - avoid unnecessary native queries
-    - use Optional for nullable queries
-    - avoid business logic in repositories
+  async_performance_and_caching:
+    - "Use non-blocking request flows where stack expects it."
+    - "Avoid blocking .get()/join calls or supply explicit timeouts."
+    - "Avoid DB or network calls inside loops."
+    - "Render/compute expensive artifacts ONCE and reuse. Skip expensive work when output is unused."
+    - "Reuse singletons for template engines, ObjectMapper, and HTTP clients."
+    - "Use distributed caching (Redis) with declarative @Cacheable(..., sync = true) to prevent cache stampedes."
+    - "Scope mutable state per-execution (no static ConcurrentHashMap cleared across parallel runs)."
 
-  rest_api:
-    - use proper HTTP methods
-    - use ResponseEntity where appropriate
-    - return proper HTTP status codes
-    - avoid verbs in URI
-    - use plural resource names
-    - consistent endpoint naming
-    - use DTOs
-    - never expose entities directly
+  messaging_and_queues:
+    - "Use deterministic deduplication ID (derived from business keys, SHA-256 hashed) for FIFO queues (SQS/Kafka)."
+    - "Ensure message processing is fully idempotent on redelivery."
+    - "Move long processing out of transaction scope when publishing messages."
 
-  dto:
-    - request DTOs
-    - response DTOs
-    - never expose entities
-    - use MapStruct where applicable
-
-  jpa:
-    - prefer LAZY fetch
-    - avoid EAGER fetch
-    - avoid CascadeType.ALL
-    - use fetch joins
-    - implement equals/hashCode correctly
-    - avoid bidirectional relationships when unnecessary
-
-  performance:
-    - paginate database queries
-    - cache expensive operations
-    - avoid repeated DB calls in loops
-    - avoid nested loops
-    - avoid unnecessary streams
-    - avoid unnecessary object creation
-
-  java:
-    - use final where possible
-    - avoid magic numbers
-    - use constants
-    - avoid duplicate code
-    - use generics
-    - avoid raw types
-    - avoid wildcard imports
-    - keep methods small
-    - keep classes focused
-    - use switch expressions
-    - prefer immutable objects
-
-  naming:
-    - classes PascalCase
-    - methods camelCase
-    - variables camelCase
-    - constants UPPER_CASE
-    - interfaces should be nouns
-    - avoid abbreviations
-
-  collections:
-    - prefer List over ArrayList
-    - prefer Set for uniqueness
-    - return immutable collections
-    - return empty collections instead of null
-
-  null_handling:
-    - Optional only for return values
-    - avoid Optional fields
-    - avoid returning null collections
-    - prefer empty collections
-
-  configuration:
-    - avoid hardcoded URLs
-    - use application.yml
-    - externalize configuration
-    - use environment variables
-    - group configuration logically
-
-  testing:
-    - services require unit tests
-    - controllers require integration tests
-    - repositories require data tests
-    - mock external dependencies
-    - avoid Thread.sleep in tests
-
-  clean_code:
-    - single responsibility principle
-    - avoid methods longer than 50 lines
-    - avoid classes longer than 500 lines
-    - avoid deep nesting
-    - meaningful variable names
-    - remove dead code
-    - remove commented code
-    - avoid duplicate logic
-
-  documentation:
-    - JavaDoc for public APIs
-    - document complex logic
-    - document custom annotations
-
-  response:
-    - consistent API response
-    - include timestamp
-    - include status
-    - include message
-    - include error code
-
-  concurrency:
-    - avoid shared mutable state
-    - use thread-safe collections
-    - use CompletableFuture correctly
-    - avoid unnecessary synchronized blocks
-
-  code_smells:
-    - long methods
-    - large classes
-    - duplicate code
-    - god class
-    - feature envy
-    - primitive obsession
-    - data clumps
-    - shotgun surgery
-
-  microservices:
-    - configure timeouts
-    - configure retries
-    - configure circuit breakers
-    - externalize service URLs
-    - use resilience patterns
-
-  quality:
-    - no SonarQube blocker issues
-    - no SpotBugs high issues
-    - no PMD critical issues
-    - Checkstyle compliant
-    - no compiler warnings
-
-  java17:
-    - use records for immutable DTOs
-    - use switch expressions
-    - use text blocks
-    - use pattern matching
-    - use sealed classes where appropriate
+  code_quality_and_cleanup:
+    - "DEAD METHOD / UNUSED FIELD CLEANUP: Delete unreferenced private methods, unused fields, and commented-out legacy code blocks."
+    - "ENTITY / MODEL NAMING: Must append 'Model' suffix AND match DB table name."
+    - "PROCESSOR / LAYERING: Do NOT return persistence model as result payload – return dedicated Result object."
+    - "REPOSITORY OWNERSHIP: Put each query in the repository that owns that table/entity."
+    - "SQS / MESSAGING: Centralized SQS config, deterministic deduplication ID, idempotent redelivery ACK."
+    - "DTO NAMING & COMPLETENESS: All DTO fields camelCase; audit every DTO field completeness against DB table."
 
 severity:
   BLOCKER:
-    - hardcoded password
-    - hardcoded secret
-    - SQL Injection
-    - command injection
-    - exposed credentials
-
+    - "hardcoded secret"
+    - "SQL Injection risk"
+    - "unauthorized REST endpoint"
   CRITICAL:
-    - controller accessing repository
-    - missing authorization
-    - missing transaction
-    - exposed stack trace
+    - "field injection (@Autowired on fields)"
+    - "direct DB access from Controller"
+    - "N+1 query inside loop"
+    - "missing @Valid on @RequestBody"
 
-  MAJOR:
-    - field injection
-    - System.out.println
-    - missing @Valid
-    - findAll without Pageable
-    - entity exposed through API
-    - missing global exception handler
-
-  MINOR:
-    - long methods
-    - duplicate code
-    - magic numbers
-    - deep nesting
-
-  INFO:
-    - missing JavaDoc
-    - naming improvements
-    - formatting suggestions
-
-review_categories:
-  - Security
-  - Spring Boot
-  - Architecture
-  - Dependency Injection
-  - Transactions
-  - Validation
-  - REST API
-  - JPA
-  - Performance
-  - Logging
-  - Exception Handling
-  - Testing
-  - Clean Code
-  - Documentation
-  - Code Smells
-  - Maintainability
-  - Readability
+ruleOverrides:
+  - id: "RULE_FIELD_INJECTION"
+    severity: "critical"
